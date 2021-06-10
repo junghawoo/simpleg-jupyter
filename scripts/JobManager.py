@@ -103,12 +103,14 @@ class JobManager:
         sys.stdout.flush()
         # SIMPLE-G-mapping_file.csv is required to get readable string for each shock variables in the output dialog
         os.system('cp -r %s %s' %(SUPP_DIR, jobdir))
+        print('cp -r %s %s' %(SUPP_DIR, jobdir))
 
-        if jobid != None and self.control != None :
+        if jobid != None:
             #write baseline shocks to CMF
-            self.control.applyBaselineShocks(jobid)
+            #self.control.applyBaselineShocks(jobid)
             #write policy shocks to the CMF file
-            self.control.setPolicyTab.getAllPolicies(jobid, CMF_FILE);
+            #self.control.setPolicyTab.getAllPolicies(jobid, CMF_FILE);
+            command = ''''''
         else :
             print("Job submit failed ")
             return False, None

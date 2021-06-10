@@ -1,0 +1,31 @@
+
+The following have been reloaded with a version change:
+  1) impi/18.0.2 => impi/17.0.3       3) python2/2.7.15 => python2/2.7.14
+  2) intel/18.0.2 => intel/17.0.4
+
+Lmod has detected the following error: The following module(s) are unknown:
+"Rstats/3.4.0"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore-cache load "Rstats/3.4.0"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+Lmod has detected the following error: The following module(s) are unknown:
+"RstatsPackages/3.4.0"
+
+Please check the spelling or version number. Also try "module spider ..."
+It is also possible your cache file is out-of-date; it may help to try:
+  $ module --ignore-cache load "RstatsPackages/3.4.0"
+
+Also make sure that all modulefiles written in TCL start with the string
+#%Module
+
+
+
+/home1/05519/glass/HUBapps/simpleus/r112/bin/runSIMPLE_US.sh: line 175: Rscript: command not found
+/home1/05519/glass/HUBapps/simpleus/r112/bin/runSIMPLE_US.sh: line 177: Rscript: command not found
