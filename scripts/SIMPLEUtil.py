@@ -4,7 +4,7 @@ import errno
 import shutil
 import pwd
 import grp
-
+from pathlib import Path
 
 class SIMPLEUtil:
 
@@ -12,7 +12,7 @@ class SIMPLEUtil:
     WORKING_DIR = os.path.expanduser("~") + "/SimpleGTool"
     PRIVATE_JOBS_DIR = WORKING_DIR +"/job"
     APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #/home/mygeohub/yirugi/notebooks/hydroglobe/trunk
-    SHARED_JOBS_DIR = '/data/groups/simpleggroup/job'
+    SHARED_JOBS_DIR = '/data/groups/SimpleGTool/job'
     SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
     DATA_DIR = SRC_DIR + "/data"
     CORNSOY_SUPP_DIR = SRC_DIR + "/inputs/CornSoy/supp_files"
@@ -21,7 +21,7 @@ class SIMPLEUtil:
     @staticmethod
     def mkdir(dir):
         if not os.path.exists(dir):
-            os.mkdir(dir)
+            Path(dir).mkdir(parents=True, exist_ok=True)
 
     # recursive directory creation function
     @staticmethod

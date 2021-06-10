@@ -9,7 +9,9 @@ import time
 class JobManager:
     
     dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool"
-    db = DBManager(dbfile)
+    
+    db = None
+    
     params = {}
 
     DEFAULT_WALTIME = 300 #minute
@@ -21,23 +23,23 @@ class JobManager:
     ################################################
     def __init__(self, params = None, control= None):
         if params == None and control == None: #job manage mode
+            print("In the if")
             return
 
         self.params = params
         self.control = control
-
-
+        self.db = DBManager(self.dbfile)
         print("===== Job submission to Stampede2 cluster =====")
         print("> JOB submission parameters : ")
         print(pprint.pformat(params))
 
 
-    ###########################################################
-    # job submission. Returns status(True,False), jobid
-    # Jungha Woo
-    # modeltype can be  'AllCrops','CornSoy', 'Custom AllCrops', or 'Custom CornSoy'
-    # Please see modelInternalType at simpeGUI.py
-    ###########################################################
+        ###########################################################
+        # job submission. Returns status(True,False), jobid
+        # Jungha Woo
+        # modeltype can be  'AllCrops','CornSoy', 'Custom AllCrops', or 'Custom CornSoy'
+        # Please see modelInternalType at simpeGUI.py
+        ###########################################################
     def submitJob(self, modeltype):
         # get new job id form DB
 
