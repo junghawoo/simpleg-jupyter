@@ -137,8 +137,9 @@ class Controller(logging.Handler):
         cursor.execute("SELECT * FROM jobs")
         rows = cursor.fetchall()
         list_of_jobs = []
+        col_width = max(len(word) for row in rows for word in row) + 2  # padding
         for row in rows:
-            str_row = "{:<10s} {:<15s} {:<20s} {:100s} {:12s}".format(row[0],row[1],row[2],row[3],row[4])
+            str_row = "".join(word.ljust(col_width) for word in row)
             list_of_jobs.append(str_row)
         #self.selectable_window.options
         cursor.close()

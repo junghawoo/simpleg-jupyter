@@ -17,7 +17,7 @@ class Sqlitedatabase:
         #If the table is blank
         if len(rows) == 0:
             #Adding the first line just to make it like the column names, easier to read for the user
-            cursor.execute("INSERT INTO jobs (job_id,model_type,name,description,status) VALUES('Job ID','Model Type','Name of the Model','Description','STATUS')")
+            cursor.execute("INSERT INTO jobs (job_id,model_type,name,description,status) VALUES('Job ID','Model Type','Name','Description','STATUS')")
             #Commit is important to save the data in the table
             conn.commit()
             cursor.execute("SELECT * FROM jobs")

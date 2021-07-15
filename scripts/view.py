@@ -1,6 +1,3 @@
-# view.py - User interface for scsa notebook
-# rcampbel@purdue.edu - 2020-07-14
-
 import ipywidgets as ui
 from IPython.core.display import display
 from IPython.display import FileLink
@@ -294,8 +291,9 @@ class View:
         cursor.execute("SELECT * FROM jobs")
         rows = cursor.fetchall()
         list_of_jobs = []
+        col_width = max(len(word) for row in rows for word in row) + 2  # padding
         for row in rows:
-            str_row = "{:<10s} {:<15s} {:<20s} {:100s} {:12s}".format(row[0],row[1],row[2],row[3],row[4])
+            str_row = "".join(word.ljust(col_width) for word in row)
             list_of_jobs.append(str_row)
         #self.selectable_window.options
         cursor.close()
