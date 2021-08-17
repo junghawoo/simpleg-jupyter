@@ -8,11 +8,18 @@ from matplotlib import pyplot as plt
 from IPython.core.display import display, clear_output
 import sqlite3
 import os
-
+import ipywidgets as ui
 from scripts.constants import *
 from scripts.sqlitedb import Sqlitedatabase
-#from scripts.DBManager import *
+from scripts.mapwidget import CustomMap
+from scripts.layerservice import RasterLayerUtil
+from model.variableutil import VariableModel
+from scripts.DBManager import *
 #from JobManager.py import *
+from IPython.display import clear_output
+from IPython.display import HTML
+from scripts.view import section
+from scripts.layerservice import VectorLayerUtil
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -31,7 +38,8 @@ class CombineLogFields(logging.Filter):
 
 class Controller(logging.Handler):
     VALUE = 'value'  # for observe calls
-
+    map_widgets = []
+    
     def __init__(self, log_mode):  # 0=none 1=info 2=debug
 
         # TODO Remove testing code below
@@ -89,8 +97,8 @@ class Controller(logging.Handler):
         try:
                         
             #Set up the database
-            self.db_class_import = Sqlitedatabase()
-            self.cursor=self.db_class_import.Database()
+            self.db_class_import = DBManager()
+            
             
             # Set up user interface
             self.view.display(self.display_log)
@@ -101,6 +109,8 @@ class Controller(logging.Handler):
             #   Format: <widget>.on_click/observe(<method_to_be_called>...)
             self.view.submit_button.on_click(self.cb_submit_model)
             self.view.selectable_window.observe(self.refresh_manage_jobs)
+            self.view.display_btn.on_click(self.cb_display_btn)
+            self.view.view_button_submit.on_click(self.cb_tif_display)
             #self.view.upload_btn.on_click(self.cb_upload_btn_create)
             
 
@@ -114,39 +124,87 @@ class Controller(logging.Handler):
         if self.view.model_dd == "-":
             return 
         #Creating the database connection
-        dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
-        conn = sqlite3.connect(dbfile)
-        cursor = conn.cursor()
-        #Temporary find number of rows
-        cursor.execute("SELECT * from jobs")
-        rows = cursor.fetchall()
-        #Adding all the values of the model to the sql database
-        cursor.execute("INSERT INTO jobs (job_id,model_type,name,description,status) VALUES(?,?,?,?,?)",[str(len(rows)+1),self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"Test"])
-        conn.commit()
-        cursor.close()
-        conn.close()
+        self.db_class_import.createNewJob(self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"None",os.popen("whoami").read(),0,)
+        print("Submit")
         #Refresh the manage tab
-        self.refresh_manage_jobs
+        self.refresh_manage_jobs()
         return 
     
-    def refresh_manage_jobs(self,_):
+    def refresh_manage_jobs(self):
+        
+        #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
         cursor = conn.cursor()
         #Database is always created first so the next statement should not give an error
-        cursor.execute("SELECT * FROM jobs")
+        cursor.execute("SELECT * FROM SIMPLEJobs")
         rows = cursor.fetchall()
         list_of_jobs = []
-        col_width = max(len(word) for row in rows for word in row) + 2  # padding
+        col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
         for row in rows:
-            str_row = "".join(word.ljust(col_width) for word in row)
+            str_row = "".join(str(word).ljust(col_width) for word in row)
             list_of_jobs.append(str_row)
-        #self.selectable_window.options
         cursor.close()
         conn.close()
-        self.view.selectable_window.options = list_of_jobs
-        return 
+        
+        #Selectable multiple widget / Checkboxes for each
+        self.view.selectable_window = ui.GridspecLayout(len(rows),11,height="auto")
+        row_counter = 0
+        for row in rows:
+           
+            if(row_counter==len(self.view.checkboxes)):
+                     self.view.checkboxes.append(ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto")))
+            self.view.selectable_window[row_counter,:1] = self.view.checkboxes[row_counter]
+            self.view.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
+            self.view.selectable_window[row_counter,2] = ui.HTML(row[6])
+            self.view.selectable_window[row_counter,3:5] = ui.HTML(row[5])
+            self.view.selectable_window[row_counter,5:10] = ui.HTML(row[8])
+            self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
+            row_counter = row_counter + 1
+        self.view.checkboxes[0].disabled = True
+        self.view.selectable_window_vbox.children = [self.view.selectable_window]
+        #clear_output(wait=True)
+        #display(HTML(filename='style.html'))  # Generic app appearance 
+        #display(HTML(filename='header.html')) # Notebook-specific title and style
+        #self.view.display(self.display_log)
+        
+        return
     
+    def cb_display_btn(self,_):
+        id = 0 
+        for i in self.view.checkboxes:
+            if i.value == True:
+                self.create_map_widget(id)
+            id = id + 1
+        return
+    
+    def create_map_widget(self,map_id):
+        map_wid = CustomMap("1200px","720px")
+        freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
+        mapbox=section("Map ID: "+str(map_id),[map_wid])
+        
+        temp_list = list(self.view.view_vbox.children)
+        temp_list.append(mapbox)
+        self.view.view_vbox.children = tuple(temp_list)
+        
+        return
+    def cb_tif_display(self,_):
+        
+        for i in range(1,len(self.view.view_vbox.children)):
+            mapbox = self.view.view_vbox.children[i]
+            map_id = mapbox.get_title(0)
+            map_id = map_id.replace("Map ID: ","")
+            variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
+
+            map_wid = mapbox.children[0].children[0]
+            if variable_model.is_raster():
+                layer_util = RasterLayerUtil(variable_model)
+                layer = layer_util.create_layer()
+                map_wid.visualize_raster(layer, layer_util.processed_raster_path)
+            elif variable_model.is_vector():
+                layer_util = VectorLayerUtil(variable_model)
+                layer = layer_util.create_layer()
+        return
     ################################################################################
     def cb_data_source_selected(self, change):
         """User selected a data file"""

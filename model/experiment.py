@@ -81,7 +81,7 @@ class Experiment:
 
     @staticmethod
     def to_id(id_str: str) -> int:
-        id_ = int(id_str[1:])
+        id_ = int(id_str)
         return id_
 
     @staticmethod

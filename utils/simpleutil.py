@@ -41,16 +41,16 @@ def shared_jobs_dir() -> Path:
 
 
 class SIMPLEUtil:
-    WORKING_DIR: Path = Path.home() / "SimpleUSRun"
+    WORKING_DIR: Path = Path.home() / "SimpleGTool"
     PRIVATE_JOBS_DIR: Path = WORKING_DIR / "job"
     SHARED_JOBS_DIR: Path = shared_jobs_dir()
-    SHARED_JOBS_SYM_LINK: Path = WORKING_DIR / "shared"  # For mygeohub's Jupyter. It needs a path relative to home
+    SHARED_JOBS_SYM_LINK: Path = WORKING_DIR / "job"  # For mygeohub's Jupyter. It needs a path relative to home
 
     TEMP_DIR: Path = WORKING_DIR / "temp"  # To store temp directories for display/comparison "sessions"
     LOG_FILE: Path = TEMP_DIR / "simple-us.log"
     BASE_URL = base_url()  # For Jupyter server. It is assumed the server is started from the home directory
-    PRIVATE_JOBS_URL = BASE_URL + "/SimpleUSRun/job"
-    SHARED_JOBS_URL = BASE_URL + "/SimpleUSRun/shared"
+    PRIVATE_JOBS_URL = BASE_URL + "/SimpleGTool/job"
+    SHARED_JOBS_URL = BASE_URL + "/SimpleGTool/job"
 
     # TODO: Update this because the project structure has changed
     APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

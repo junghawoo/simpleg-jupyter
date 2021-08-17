@@ -4,7 +4,11 @@ from IPython.display import FileLink
 import sqlite3
 
 from scripts.constants import *
+from scripts.mapwidget import CustomMap
 import os
+from scripts.layerservice import RasterLayerUtil
+from model.variableutil import VariableModel
+from scripts.DBManager import *
 
 def section(title, contents):
     """Create a collapsible widget container"""
@@ -20,26 +24,6 @@ def section(title, contents):
 class View:
     TAB_TITLES = ['Create', 'Manage', 'View', 'About']
     MODEL_DROPDOWN_CREATETAB = ['-','Custom Crops','Custom CornSoy']
-    EMPTY_LIST_MSG = "(There's no data to display.)"
-    ALL_LBLVAL = (ALL, ALL)
-    EMPTY = ''
-    DATA_NONE = '(No data loaded.)'
-    DATA_LOAD = 'Loading data...\nThis might take a few moments.'
-    DATA_INTRO = 'Here is an overview of the current full dataset:'
-    USING_TITLE = 'Using This App'
-    USING_TEXT = '''<p>
-    First, in the <b>Data</b> tab above, select and review a dataset.
-    Next, go to the <b>Selection</b> tab to search for and download data of interest.
-    After selecting your data, create and download plots in the <b>Visualize</b> tab.
-    </p>'''
-    SOURCES_TITLE = 'Notes'
-    SOURCES_TEXT = '''<p>
-    <b>AgMIP</b>
-    </p><p>
-    <a href="https://agmip.org/" target="_blank">Agricultural Model Intercomparison and Improvement Project </a>
-    </p><p>
-    This tool is based on the Self-Contained Science App.
-    </p>'''
     SECTION_TITLE = 'Data'
     DATA_SOURCE_TITLE = 'Source'
     DDN_PROMPT = 'Please select a data file:'
@@ -114,8 +98,6 @@ class View:
     DATA_PRESENT_INDICATOR = '&#x2588'
     DATA_ABSENT_INDICATOR = '&#x2591'
 
-    DATA_PRESENT_DESC = '&nbsp;Data contains records with model and field value'
-    DATA_ABSENT_DESC = '&nbsp;No records exist for given model and field value'
 
     def __init__(self):
         # MVC objects
@@ -127,6 +109,7 @@ class View:
         # General
         self.tabs = None  # Main UI container
         self.debug_output = None
+        self.display_object = None
         
         #Create Tab
         self.model_dd = None
@@ -142,8 +125,18 @@ class View:
         self.selectable_window = None
         self.display_btn = None
         self.compare_btn = None
-        # View Tab TODO
+        self.checkboxes = []
+        self.jobs = []
         
+        # View Tab 
+        self.system_component = None
+        self.spatial_resolution = None
+        self.type_of_result = None
+        self.result_to_view = None
+        self.min_max_slider = None
+        self.view_button_submit = None
+        self.view_vbox = None
+        self.selectable_window_vbox = None
         #About Tab
         #################################
         # Data source, overview, download, and coverage
@@ -264,47 +257,106 @@ class View:
         return contentvbox
     
     def manageTab(self):
+        
         #Label with refresh and instructions
         self.instructions_label=ui.Label(value="Instructions: Select one or model to compare. Click on the first row below in the selectable window for the refresh/changes to work.")
         self.refresh_btn=ui.Button(description="Refresh",disabled=False)
         self.refresh_btn.style.button_color='gray'
         top_box=ui.HBox([self.refresh_btn,self.instructions_label])
-        #Selectable multiple widget
-        box_layout = ui.Layout(display='flex',flex_flow='column', align_items='stretch',border='solid',width='90%')
-        self.selectable_window=ui.SelectMultiple(options=['Model 1', 'Model 2', 'Model 3'],rows=10,disabled=False,layout=box_layout)
-        #Display Compare Buttons
-        self.display_btn=ui.Button(description="Display",disabled=False)
-        self.display_btn.style.button_color='gray'
-        self.compare_btn=ui.Button(description="Compare",disabled=False)
-        self.compare_btn.style.button_color='gray'
-        self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
-        #Join the widgets
-        content=[top_box,section("Compare Tab",[ui.VBox(children=[self.selectable_window])]),self.bottom_box]
-        contentvbox = ui.VBox(content)
-        #contentvbox.layout.align_self = 'center'
         
         #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
         cursor = conn.cursor()
         #Database is always created first so the next statement should not give an error
-        cursor.execute("SELECT * FROM jobs")
+        cursor.execute("SELECT * FROM SIMPLEJobs")
         rows = cursor.fetchall()
         list_of_jobs = []
-        col_width = max(len(word) for row in rows for word in row) + 2  # padding
+        col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
         for row in rows:
-            str_row = "".join(word.ljust(col_width) for word in row)
+            str_row = "".join(str(word).ljust(col_width) for word in row)
             list_of_jobs.append(str_row)
-        #self.selectable_window.options
         cursor.close()
         conn.close()
+        
+        #Selectable multiple widget / Checkboxes for each
+        self.checkboxes = []
+        self.selectable_window = ui.GridspecLayout(len(rows),11,height="auto")
+        row_counter = 0
+        for row in rows:
+            self.checkboxes.append(ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto")))
+            self.selectable_window[row_counter,:1] = self.checkboxes[-1]
+            self.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
+            self.selectable_window[row_counter,2] = ui.HTML(row[6])
+            self.selectable_window[row_counter,3:5] = ui.HTML(row[5])
+            self.selectable_window[row_counter,5:10] = ui.HTML(row[8])
+            self.selectable_window[row_counter,10] = ui.HTML(row[4])
+            row_counter = row_counter + 1
+        self.checkboxes[0].disabled = True
+            
+            
+        
+        #Display Compare Buttons
+        self.display_btn=ui.Button(description="Display",disabled=False)
+        self.display_btn.style.button_color='gray'
+        self.compare_btn=ui.Button(description="Compare",disabled=False)
+        self.compare_btn.style.button_color='gray'
+        self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
+        self.selectable_window_vbox = ui.VBox(children=[self.selectable_window])
+        #Join the widgets
+        content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box]
+        contentvbox = ui.VBox(content)
+        #contentvbox.layout.align_self = 'center'
+        
+
         self.selectable_window.options = list_of_jobs
         return contentvbox
     
     def viewTab(self):
-        content=[section("Window to display","Display Window")]
-        return ui.VBox(content)
-            
+        box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
+        self.system_component=ui.Dropdown(options = ["-","Environment","Land","Production","Water"],value = '-',description='System Component:',disabled=False,style=dict(description_width='initial'))
+        
+        self.resolution=ui.Dropdown(options = ["-","Geospatial","Regional","Global"],value = '-',description='Spatial Resolution:',disabled=False ,style=dict(description_width='initial'))
+        
+        self.type_of_result=ui.Dropdown(options = ["-","Absolute Changes","Base Value","Updated Value", "Percent Changes"],value = '-',description='Type of Result:',disabled=False ,style=dict(description_width='initial'))
+        
+        self.result_to_view = ui.Dropdown(options = ["-","Irrigated","Rainfed"],value = '-',description='Result to View:',disabled=False,style=dict(description_width='initial'))
+        
+        self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
+        
+        self.view_button_submit = ui.Button(description = 'SUBMIT')
+        
+        content=section("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.type_of_result,self.result_to_view,self.min_max_slider,self.view_button_submit],layout=box_layout)])
+        
+        map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
+        freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
+        mapbox=section("Map 1",[map_wid])
+        id_str = "1"
+        system_component="Production"
+        spatial_resolution = "Geospatial"
+        type_of_result = "PCT"
+        result_to_view = "irrigated"
+        filter_min = 0
+        filter_max = 100
+
+        variable_model = VariableModel(id_str, system_component, spatial_resolution, type_of_result,result_to_view, filter_min, filter_max)
+
+
+        if variable_model.is_raster():
+                layer_util = RasterLayerUtil(variable_model)
+                layer = layer_util.create_layer()
+                map_wid.visualize_raster(layer, layer_util.processed_raster_path)
+        elif variable_model.is_vector():
+                layer_util = VectorLayerUtil(variable_model)
+                layer = layer_util.create_layer()
+        '''
+        self.view_vbox = ui.VBox(children=[content])
+        return self.view_vbox
+    
+    ###################################################
+    ###################################################
+    ###################################################
+    ###################################################
     ###################################################  
     def data(self):
         """Create widgets for data tab content"""

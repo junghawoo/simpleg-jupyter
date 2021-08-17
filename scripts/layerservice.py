@@ -15,6 +15,7 @@ from gdalscripts import gdal_edit
 from model.variableutil import VariableModel
 from utils import SIMPLEUtil
 from utils.misc import NODATA
+from utils.experimentutil import ExperimentManager
 
 
 # PYTHON GOTCHAS: https://gdal.org/api/python_gotchas.html
@@ -23,6 +24,7 @@ gdal.UseExceptions()
 
 class RasterLayerUtil:
     def __init__(self, variable_model: VariableModel):
+        print(variable_model.file_path())
         assert variable_model.file_path().exists()
         assert variable_model.is_raster()
 
@@ -215,6 +217,7 @@ class RasterLayerUtil:
 
 class VectorLayerUtil:
     def __init__(self, variable_model: VariableModel):
+        print(variable_model.file_path())
         assert variable_model.file_path().exists()
         assert variable_model.is_vector()
 

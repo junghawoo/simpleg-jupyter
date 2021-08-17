@@ -16,11 +16,12 @@ from ipyleaflet import ScaleControl
 from ipyleaflet import SearchControl
 from ipyleaflet import WidgetControl
 from ipyleaflet import ZoomControl
-from ipywidgets import Output, VBox, jslink, Checkbox, HTML
+from ipywidgets import Output, VBox, jslink, Checkbox, HTML, Button, ButtonStyle
 from ipywidgets import Layout
 from osgeo import gdal
 
-
+from model.variableutil import VariableModel
+from utils.misc import NODATA
 # PYTHON GOTCHAS: https://gdal.org/api/python_gotchas.html
 gdal.UseExceptions()
 
@@ -228,19 +229,21 @@ class LegendBar(VBox):
             value_str = "{:.2e}".format(value)
         else:
             value_str = "{:.2f}".format(value)
-        text = CustomText(value_str, style_={"font-size": "8.5px", "opacity": "1.0"})
-        bucket = Container(children=text,
-                           style_={
-                               "width": str(self._bucket_width) + "px",
-                               "height": "20px",
-                               "display": "flex",
-                               "flex-direction": "row",
-                               "align-items": "center",
-                               "justify-content": "center",
-                               "background": color,
-                               "padding": "0px 0px 0px 0px",
-                               "opacity": "0.75",
-                           })
+        legend_layout = Layout(
+                               width= "auto",
+                               height= "auto",
+                               display="flex",
+                               flex_flow= "column",
+                               #align_items= "stretch",
+                               justify_content= "center",
+                               button_color= color,
+                               margin= "0px 0px 0px 0px",
+                               opacity= "0.75"
+                           )
+        #text = Button(description=value_str, style =ButtonStyle(font_size= "8.5px", opacity= "1.0",button_color=color,padding="0px 0px 0px 0px",height="auto", width="auto"))
+        text = Button(description=value_str, layout = legend_layout)
+        text.style.button_color = color
+        bucket = VBox(children=[text],layout=legend_layout)
         return bucket
 
     def _rgb_to_hex(self, r: int, g: int, b: int):

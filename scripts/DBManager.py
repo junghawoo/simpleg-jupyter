@@ -14,8 +14,8 @@ class DBManager:
     #Create the SimpleGTool folder if it doesn't exist
     Path(dbfile).mkdir(parents=True, exist_ok=True)
     
-    def __init__(self, directoryPath):
-        self.DB_FILE = directoryPath + '/DatabaseFile(DONOTDELETE).db'
+    def __init__(self):
+        self.DB_FILE = self.dbfile + '/DatabaseFile(DONOTDELETE).db'
         self.initTable(self.DB_FILE)
         
 
@@ -49,7 +49,7 @@ class DBManager:
         # Creating the Table and the DB File
         sql = '''
         CREATE TABLE IF NOT EXISTS SIMPLEJobs (
-            jobid INTEGER PRIMARY KEY AUTOINCREMENT,
+            jobid INTEGER PRIMARY KEY,
             submitId TEXT,
             submitTime TEXT,
             author TEXT,
@@ -63,35 +63,25 @@ class DBManager:
         cursor.execute(sql)
         conn.commit()
         conn.close()
+        if(len(self.getJobList())==0):
+            self.createNewJob("Model Type","Name","Description","Status","Author","0")
         return
     
-    def createNewJob(self):
+    def createNewJob(self,model_dd,name,description,status,author,published):
         
         now = datetime.datetime.now()
         submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
         
+        rows = self.getJobList()
+        
         con = sqlite3.connect(self.DB_FILE)
         #conn = self.conn
         conn = con.cursor()
-        sql = 'insert into SIMPLEJobs(submitTime,jobstatus) values (?,?);'
-        conn.execute(sql, (submit_time ,'None'))
-        con.commit()
-
-        sql = 'select jobid from SIMPLEJobs order by jobid desc limit 1;'
-        cur = conn.execute(sql)
-        jobid = cur.fetchone()[0]
-        con.commit()
-        
-        sql = 'SELECT jobid from SIMPLEJobs order by jobid desc limit 1;'
-        cur=conn.execute(sql)
-        print("CUR")
-        #conn.commit()
-        
-        print("JOBID IN CNJ")
-        print(jobid)
+        sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,published,description) values (?,?,?,?,?,?,?,?,?);'
+        conn.execute(sql, (str(len(rows)),str(len(rows)),submit_time,author,status,name,model_dd,published,description))
         con.commit()
         con.close()
-        return str(jobid)
+        return 
 
     def updateJobInfo(self, jobid, params):
         print('IN HERE!')
@@ -140,8 +130,9 @@ class DBManager:
         conn = con.cursor()
         sql = 'select * from SIMPLEJobs order by jobid desc;'
         cur = conn.execute(sql)
+        rows = cur.fetchall()
         con.close()
-        return cur.fetchall()
+        return rows
 
     def getJobInfo(self, jobid):
         con = sqlite3.connect(self.DB_FILE)
