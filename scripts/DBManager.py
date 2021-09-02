@@ -56,7 +56,7 @@ class DBManager:
             jobstatus TEXT,
             jobname TEXT,
             modeltype TEXT,
-            published INTEGER,
+            remotejobid INTEGER,
             description TEXT
         );
         '''
@@ -67,7 +67,7 @@ class DBManager:
             self.createNewJob("Model Type","Name","Description","Status","Author","0")
         return
     
-    def createNewJob(self,model_dd,name,description,status,author,published):
+    def createNewJob(self,model_dd,name,description,status,author,remotejobid):
         
         now = datetime.datetime.now()
         submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
@@ -77,8 +77,8 @@ class DBManager:
         con = sqlite3.connect(self.DB_FILE)
         #conn = self.conn
         conn = con.cursor()
-        sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,published,description) values (?,?,?,?,?,?,?,?,?);'
-        conn.execute(sql, (str(len(rows)),str(len(rows)),submit_time,author,status,name,model_dd,published,description))
+        sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,remotejobid,description) values (?,?,?,?,?,?,?,?,?);'
+        conn.execute(sql, (str(len(rows)),str(len(rows)),submit_time,author,status,name,model_dd,remotejobid,description))
         con.commit()
         con.close()
         return 
