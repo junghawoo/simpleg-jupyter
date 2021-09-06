@@ -111,6 +111,11 @@ class Controller(logging.Handler):
             self.view.selectable_window.observe(self.refresh_manage_jobs)
             self.view.display_btn.on_click(self.cb_display_btn)
             self.view.view_button_submit.on_click(self.cb_tif_display)
+            self.view.system_component.observe(self.cb_model_mapping)
+            self.view.resolution.observe(self.cb_model_mapping_name)
+            self.view.name_dd.observe(self.cb_model_mapping_type)
+            self.view.type_of_result.observe(self.cb_submit_button_enable)
+            self.view.result_to_view.observe(self.cb_result_to_view)
             #self.view.upload_btn.on_click(self.cb_upload_btn_create)
             
 
@@ -205,8 +210,104 @@ class Controller(logging.Handler):
                 layer_util = VectorLayerUtil(variable_model)
                 layer = layer_util.create_layer()
         return
+    
+    def cb_model_mapping(self,_):
+        if (len(self.view.view_vbox.children) <= 1):
+            return
+        self.view.type_of_result.value=self.view.type_of_result.options[0]
+        self.view.view_button_submit.disabled = True
+        if(self.view.system_component.value=="Environment"):
+                self.view.resolution.options = ["-","Geospatial"]
+                self.view.name_dd.options = ["-","N-use Grid"]
+                self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
+                self.view.result_to_view.disabled = False
+                
+        if(self.view.system_component.value=="Water"):
+            self.view.resolution.options = ["-","Geospatial","Regional"]
+            self.view.name_dd.options = ["-"]#"Water Use Grid","Water Use - Region","Water per Ha - Region"
+            self.view.result_to_view.options = ["-"]
+            self.view.result_to_view.disabled = True
+            
+        if(self.view.system_component.value=="Land"):
+            self.view.resolution.options = ["-","Geospatial","Regional"]
+            self.view.name_dd.options = ["-"]#,"Land Use Grid","Land Use - Region,Type","Land Use - Region"]
+            self.view.result_to_view.options = ["-"]
+            self.view.result_to_view.disabled = True
+        
+        if(self.view.system_component.value=="Production"):
+            self.view.resolution.options = ["-","Geospatial","Regional","Global"]
+            self.view.name_dd.options = ["-"]#,"Yield Region","Regional Price","Net Export","Output Region","Ouput Grid","World Price"
+            self.view.result_to_view.options = ["-"]#,"Irrigated","Rainfed"]
+            self.view.result_to_view.disabled = False
+        return 
+    
+    def cb_model_mapping_name(self,_):
+        self.view.type_of_result.value=self.view.type_of_result.options[0]
+        self.view.view_button_submit.disabled = True
+        if(self.view.system_component.value=="-" or self.view.resolution.value=="-"):
+            return
+        self.view.result_to_view.options = ["-"]
+        self.view.result_to_view.disabled = True
+        self.view.name_dd.value = self.view.name_dd.options[0]
+        if(self.view.system_component.value=="Water"):
+            if(self.view.resolution.value=="Geospatial"):
+                self.view.name_dd.options = ["-","Water Use Grid"]
+            if(self.view.resolution.value=="Regional"):
+                self.view.name_dd.options = ["-","Water Use Region","Water per Ha"]
+        
+        if(self.view.system_component.value=="Land"):
+            if(self.view.resolution.value=="Geospatial"):
+                self.view.name_dd.options = ["-","Land Use Grid"]
+            if(self.view.resolution.value=="Regional"):
+                self.view.name_dd.options = ["-","Land Use Region Type","Land Use Region"]
+        
+        if(self.view.system_component.value=="Production"):
+            if(self.view.resolution.value=="Geospatial"):
+                self.view.name_dd.options = ["-","Output Grid"]
+            if(self.view.resolution.value=="Regional"):
+                self.view.name_dd.options = ["-","Yield Region","Regional Price","Net Export","Output Region"]
+            if(self.view.resolution.value=="Global"):
+                self.view.name_dd.options = ["-","World Price"]
+        return
+    
+    def cb_model_mapping_type(self,_):
+        self.view.type_of_result.value=self.view.type_of_result.options[0]
+        self.view.view_button_submit.disabled = True
+        if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-"):
+            return
+        if(self.view.system_component.value=="Production" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Output Grid"):
+            self.view.result_to_view.disabled = False
+            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
+        if(self.view.system_component.value=="Land" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Land Use Grid"):
+            self.view.result_to_view.disabled = False
+            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
+        if(self.view.system_component.value=="Land" and self.view.resolution.value=="Regional" and self.view.name_dd.value=="Land Use Region Type"):
+            self.view.result_to_view.disabled = False
+            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
+        if(self.view.system_component.value=="Environment" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="N-use Grid"):
+            self.view.result_to_view.disabled = False
+            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]        
+        return
+    
+    def cb_result_to_view(self,_):
+        self.view.type_of_result.value=self.view.type_of_result.options[0]
+        self.view.view_button_submit.disabled = True
+        return
+    def cb_submit_button_enable(self,_):
+        self.view.view_button_submit.disabled = True
+       
+        if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-" or self.view.type_of_result.value=="-"):
+            self.view.view_button_submit.disabled = True
+            return
+        
+        if(self.view.result_to_view.disabled == False and self.view.result_to_view.value=="-"):
+            self.view.view_button_submit.disabled = True
+            return
+        
+        self.view.view_button_submit.disabled = False
+        return
     ################################################################################
-    def cb_data_source_selected(self, change):
+    comment = '''def cb_data_source_selected(self, change):
         """User selected a data file"""
         self.logger.debug('At')
 
@@ -536,3 +637,4 @@ class Controller(logging.Handler):
             plt.close()  # Clear any partial plot output
             self.logger.debug('raising exception')
             raise
+'''

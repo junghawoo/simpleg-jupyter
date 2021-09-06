@@ -134,6 +134,7 @@ class View:
         self.type_of_result = None
         self.result_to_view = None
         self.min_max_slider = None
+        self.name_dd = None
         self.view_button_submit = None
         self.view_vbox = None
         self.selectable_window_vbox = None
@@ -313,6 +314,10 @@ class View:
         return contentvbox
     
     def viewTab(self):
+        #Dropdown Menus Change if the Users makes a selection on the System Component Feature
+        # Till there is a map on the View Tab there is no change to the dropdowns
+        #The functions cb_model_mapping is for this
+        #It would also disable some dropdowns if it is of no use
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
         self.system_component=ui.Dropdown(options = ["-","Environment","Land","Production","Water"],value = '-',description='System Component:',disabled=False,style=dict(description_width='initial'))
         
@@ -322,11 +327,13 @@ class View:
         
         self.result_to_view = ui.Dropdown(options = ["-","Irrigated","Rainfed"],value = '-',description='Result to View:',disabled=False,style=dict(description_width='initial'))
         
+        self.name_dd = ui.Dropdown(options = ["-","Names"],value = '-',description='Model Selection:',disabled=False,style=dict(description_width='initial'))
+        
         self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
         
         self.view_button_submit = ui.Button(description = 'SUBMIT')
         
-        content=section("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.type_of_result,self.result_to_view,self.min_max_slider,self.view_button_submit],layout=box_layout)])
+        content=section("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout)])
         
         map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
         freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
@@ -350,6 +357,7 @@ class View:
                 layer_util = VectorLayerUtil(variable_model)
                 layer = layer_util.create_layer()
         '''
+        self.view_button_submit.disabled = True
         self.view_vbox = ui.VBox(children=[content])
         return self.view_vbox
     
