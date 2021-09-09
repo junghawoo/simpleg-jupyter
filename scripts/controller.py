@@ -108,7 +108,8 @@ class Controller(logging.Handler):
             #   Methods listed below will be called when user activates widget.
             #   Format: <widget>.on_click/observe(<method_to_be_called>...)
             self.view.submit_button.on_click(self.cb_submit_model)
-            self.view.selectable_window.observe(self.refresh_manage_jobs)
+            #self.view.selectable_window.observe(self.refresh_manage_jobs)
+            self.view.refresh_btn.on_click(self.refresh_manage_jobs)
             self.view.display_btn.on_click(self.cb_display_btn)
             self.view.view_button_submit.on_click(self.cb_tif_display)
             self.view.system_component.observe(self.cb_model_mapping)
@@ -116,15 +117,27 @@ class Controller(logging.Handler):
             self.view.name_dd.observe(self.cb_model_mapping_type)
             self.view.type_of_result.observe(self.cb_submit_button_enable)
             self.view.result_to_view.observe(self.cb_result_to_view)
+            self.view.compare_btn.on_click(self.cb_compare_models)
+            self.view.refresh_btn.on_click(self.refresh_manage_jobs)
             #self.view.upload_btn.on_click(self.cb_upload_btn_create)
             
 
         except Exception:
             self.logger.error('EXCEPTION\n' + traceback.format_exc())
             raise
+            
     def cb_test(self, _):
         print(self.view.model_dd.value)
-        
+    
+    def jobs_selected(self,_):
+        #This will return a list of the job ids which are selected in the job_selection variable
+        #Running a loop to check selected checkboxes for the box
+        self.view.job_selection = []
+        for jobid,checkbox in self.view.checkboxes.items():
+            if(checkbox.value == True):
+                self.view.job_selection.append(jobid)
+        return
+    
     def cb_submit_model(self,_):
         if self.view.model_dd == "-":
             return 
@@ -136,7 +149,6 @@ class Controller(logging.Handler):
         return 
     
     def refresh_manage_jobs(self):
-        
         #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
@@ -144,7 +156,9 @@ class Controller(logging.Handler):
         #Database is always created first so the next statement should not give an error
         cursor.execute("SELECT * FROM SIMPLEJobs")
         rows = cursor.fetchall()
+        #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
+        #For alignment finding the max length of each column
         col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
         for row in rows:
             str_row = "".join(str(word).ljust(col_width) for word in row)
@@ -153,26 +167,21 @@ class Controller(logging.Handler):
         conn.close()
         
         #Selectable multiple widget / Checkboxes for each
+        self.view.checkboxes = {}
         self.view.selectable_window = ui.GridspecLayout(len(rows),11,height="auto")
+        self.view.job_selection = []
         row_counter = 0
+        #Create a new dictionary key value pair for each jobid and checkbox
         for row in rows:
-           
-            if(row_counter==len(self.view.checkboxes)):
-                     self.view.checkboxes.append(ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto")))
-            self.view.selectable_window[row_counter,:1] = self.view.checkboxes[row_counter]
+            self.view.checkboxes[str(row[0])]=ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
+            self.view.selectable_window[row_counter,:1] = self.view.checkboxes[list(self.view.checkboxes.keys())[-1]]
             self.view.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
             self.view.selectable_window[row_counter,2] = ui.HTML(row[6])
             self.view.selectable_window[row_counter,3:5] = ui.HTML(row[5])
             self.view.selectable_window[row_counter,5:10] = ui.HTML(row[8])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-        self.view.checkboxes[0].disabled = True
-        self.view.selectable_window_vbox.children = [self.view.selectable_window]
-        #clear_output(wait=True)
-        #display(HTML(filename='style.html'))  # Generic app appearance 
-        #display(HTML(filename='header.html')) # Notebook-specific title and style
-        #self.view.display(self.display_log)
-        
+        self.checkboxes["0"].disabled = True        
         return
     
     def cb_display_btn(self,_):
@@ -185,17 +194,52 @@ class Controller(logging.Handler):
     
     def create_map_widget(self,map_id):
         map_wid = CustomMap("1200px","720px")
-        freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
         mapbox=section("Map ID: "+str(map_id),[map_wid])
         
         temp_list = list(self.view.view_vbox.children)
         temp_list.append(mapbox)
         self.view.view_vbox.children = tuple(temp_list)
-        
         return
+    def create_map_widget_compare(self,map_id):
+        
+        map_wid = CustomMap("1200px","360px")
+        map_wid_2 = CustomMap("1200px","360px")
+        mapbox=section("Map: "+str(map_id[0])+" and "+str(map_id[1]),[map_wid,map_wid_2])
+        
+        temp_list = list(self.view.view_vbox.children)
+        temp_list.append(mapbox)
+        self.view.view_vbox.children = tuple(temp_list)
+        return
+    
     def cb_tif_display(self,_):
         
         for i in range(1,len(self.view.view_vbox.children)):
+            #Checking to see whether the Accordian has a single map or multiple maps
+            if(len(self.view.view_vbox.children[i].children[0].children)>1):
+                mapbox = self.view.view_vbox.children[i].children[0]
+                map_id = self.view.view_vbox.children[i].get_title(0)
+                map_id = map_id.replace("Map: ","")
+                map_id = map_id.replace(" ","")
+                map_id_1 = map_id.split("and")[-1]
+                map_id = map_id.split("and")[0]
+                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
+                variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
+                map_wid = mapbox.children[0]
+                map_wid_1 =mapbox.children[1]
+                if variable_model.is_raster():
+                    layer_util = RasterLayerUtil(variable_model)
+                    layer = layer_util.create_layer()
+                    map_wid.visualize_raster(layer, layer_util.processed_raster_path)
+                    
+                    layer_util = RasterLayerUtil(variable_model_1)
+                    layer = layer_util.create_layer()
+                    map_wid_1.visualize_raster(layer, layer_util.processed_raster_path)
+                    
+                elif variable_model.is_vector():
+                    layer_util = VectorLayerUtil(variable_model)
+                    layer = layer_util.create_layer()
+                continue
+            #Below is single map processing
             mapbox = self.view.view_vbox.children[i]
             map_id = mapbox.get_title(0)
             map_id = map_id.replace("Map ID: ","")
@@ -293,6 +337,8 @@ class Controller(logging.Handler):
         self.view.type_of_result.value=self.view.type_of_result.options[0]
         self.view.view_button_submit.disabled = True
         return
+    
+    
     def cb_submit_button_enable(self,_):
         self.view.view_button_submit.disabled = True
        
@@ -305,6 +351,15 @@ class Controller(logging.Handler):
             return
         
         self.view.view_button_submit.disabled = False
+        return
+    
+    def cb_compare_models(self,_):
+        self.jobs_selected("Garbage Value")
+        if(len(self.view.job_selection)!=2):
+            self.view.instructions_label.value = "Select exactly 2 models to compare"
+        else:
+            self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
+            self.create_map_widget_compare(self.view.job_selection)
         return
     ################################################################################
     comment = '''def cb_data_source_selected(self, change):
