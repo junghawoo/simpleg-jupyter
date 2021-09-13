@@ -20,7 +20,15 @@ def section(title, contents):
     ret.set_title(0, title)
     return ret
 
+def section_horizontal(title,contents):
+    """Create a collapsible widget container"""
 
+    if type(contents) == str:
+        contents = [ui.HTML(value=contents)]
+
+    ret = ui.Accordion(children=tuple([ui.HBox(contents)]))
+    ret.set_title(0, title)
+    return ret
 class View:
     TAB_TITLES = ['Create', 'Manage', 'View', 'About']
     MODEL_DROPDOWN_CREATETAB = ['-','Custom Crops','Custom CornSoy']

@@ -18,7 +18,7 @@ from scripts.DBManager import *
 #from JobManager.py import *
 from IPython.display import clear_output
 from IPython.display import HTML
-from scripts.view import section
+from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
@@ -148,7 +148,7 @@ class Controller(logging.Handler):
         self.refresh_manage_jobs()
         return 
     
-    def refresh_manage_jobs(self):
+    def refresh_manage_jobs(self,_):
         #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
@@ -181,7 +181,7 @@ class Controller(logging.Handler):
             self.view.selectable_window[row_counter,5:10] = ui.HTML(row[8])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-        self.checkboxes["0"].disabled = True        
+        self.view.checkboxes["0"].disabled = True        
         return
     
     def cb_display_btn(self,_):
@@ -202,10 +202,12 @@ class Controller(logging.Handler):
         return
     def create_map_widget_compare(self,map_id):
         
-        map_wid = CustomMap("1200px","360px")
-        map_wid_2 = CustomMap("1200px","360px")
-        mapbox=section("Map: "+str(map_id[0])+" and "+str(map_id[1]),[map_wid,map_wid_2])
-        
+        map_wid = CustomMap("600px","720px")
+        map_wid_1 = CustomMap("600px","720px")
+        map_wid.link(map_wid_1)
+        mapbox=section_horizontal("Map: "+str(map_id[0])+" and "+str(map_id[1]),[map_wid,map_wid_1])
+        mapbox.children[0].children[0].layout= ui.Layout(border='solid',width="600px",height="720px")
+        mapbox.children[0].children[1].layout= ui.Layout(border='solid',width="600px",height="720px")
         temp_list = list(self.view.view_vbox.children)
         temp_list.append(mapbox)
         self.view.view_vbox.children = tuple(temp_list)
