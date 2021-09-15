@@ -185,11 +185,18 @@ class Controller(logging.Handler):
         return
     
     def cb_display_btn(self,_):
-        id = 0 
-        for i in self.view.checkboxes:
-            if i.value == True:
-                self.create_map_widget(id)
-            id = id + 1
+        self.jobs_selected("Garbage Value")
+        if(len(self.view.job_selection)!=1):
+            self.view.instructions_label.value ="Select one model only for display"
+        else:    
+            self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
+        #print(self.view.checkboxes)
+        #print(self.view.checkboxes.keys())
+        for job in self.view.checkboxes.keys():
+            if self.view.checkboxes[job].value == True:
+                self.create_map_widget(job)
+                #print(self.view.checkboxes[job])
+                break
         return
     
     def create_map_widget(self,map_id):
@@ -267,24 +274,28 @@ class Controller(logging.Handler):
                 self.view.name_dd.options = ["-","N-use Grid"]
                 self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
                 self.view.result_to_view.disabled = False
+                self.view.longname.value="Geospatial:Nitrogen Use by Grid, Type (in MT)"
                 
         if(self.view.system_component.value=="Water"):
             self.view.resolution.options = ["-","Geospatial","Regional"]
             self.view.name_dd.options = ["-"]#"Water Use Grid","Water Use - Region","Water per Ha - Region"
             self.view.result_to_view.options = ["-"]
             self.view.result_to_view.disabled = True
+            self.view.longname.value="<br>Geospatial:Water Use by Grid (in 1000 m^3 yr)<br>Regional:[Water Use by Region (in 1000 m^3 yr),Water per Ha by Region (in m^3 yr / ha)]<br>"
             
         if(self.view.system_component.value=="Land"):
             self.view.resolution.options = ["-","Geospatial","Regional"]
             self.view.name_dd.options = ["-"]#,"Land Use Grid","Land Use - Region,Type","Land Use - Region"]
             self.view.result_to_view.options = ["-"]
             self.view.result_to_view.disabled = True
-        
+            self.view.longname.value="<br>Geospatial:Cropland Area by Grid, Type (in 1000 ha)<br>Regional:[Cropland Area by Region, Type (in 1000 ha),Cropland Area by Region (in 1000 ha)]<br>"
+            
         if(self.view.system_component.value=="Production"):
             self.view.resolution.options = ["-","Geospatial","Regional","Global"]
             self.view.name_dd.options = ["-"]#,"Yield Region","Regional Price","Net Export","Output Region","Ouput Grid","World Price"
             self.view.result_to_view.options = ["-"]#,"Irrigated","Rainfed"]
             self.view.result_to_view.disabled = False
+            self.view.longname.value="<br>Geospatial:Corn Soy Output by Grid, Type (in 1000 MT Corn eq)<br> Regional:[Crop Yield by Region (in MT per ha),Corn Soy Supply Price by Region (in USD / MT),Corn Soy Net Exports by Region (in 1000 MT Corn eq),Corn Soy Output by Region (in 1000 MT Corn eq)]<br>Global:World Corn Soy Price(in USD / MT) "
         return 
     
     def cb_model_mapping_name(self,_):
@@ -295,25 +306,37 @@ class Controller(logging.Handler):
         self.view.result_to_view.options = ["-"]
         self.view.result_to_view.disabled = True
         self.view.name_dd.value = self.view.name_dd.options[0]
+        if(self.view.system_component.value=="Environment"):
+            if(self.view.resolution.value=="Geospatial"):
+                self.view.name_dd.options = ["-","N-use Grid"]
+                self.view.longname.value="<br><br>Nitrogen Use by Grid, Type (in MT)"
+                
         if(self.view.system_component.value=="Water"):
             if(self.view.resolution.value=="Geospatial"):
                 self.view.name_dd.options = ["-","Water Use Grid"]
+                self.view.longname.value="<br><br>Water Use by Grid (in 1000 m^3 yr)]"
             if(self.view.resolution.value=="Regional"):
                 self.view.name_dd.options = ["-","Water Use Region","Water per Ha"]
+                self.view.longname.value="<br><br>Water Use by Region (in 1000 m^3 yr),Water per Ha by Region (in m^3 yr / ha)<br>"
         
         if(self.view.system_component.value=="Land"):
             if(self.view.resolution.value=="Geospatial"):
                 self.view.name_dd.options = ["-","Land Use Grid"]
+                self.view.longname.value="<br><br>Cropland Area by Grid, Type (in 1000 ha)<br>"
             if(self.view.resolution.value=="Regional"):
                 self.view.name_dd.options = ["-","Land Use Region Type","Land Use Region"]
+                self.view.longname.value="<br><br>Cropland Area by Region, Type (in 1000 ha),Cropland Area by Region (in 1000 ha)<br>"
         
         if(self.view.system_component.value=="Production"):
             if(self.view.resolution.value=="Geospatial"):
                 self.view.name_dd.options = ["-","Output Grid"]
+                self.view.longname.value="<br><br>Corn Soy Output by Grid, Type (in 1000 MT Corn eq)"
             if(self.view.resolution.value=="Regional"):
                 self.view.name_dd.options = ["-","Yield Region","Regional Price","Net Export","Output Region"]
+                self.view.longname.value="<br><br>Crop Yield by Region (in MT per ha),Corn Soy Supply Price by Region (in USD / MT),Corn Soy Net Exports by Region (in 1000 MT Corn eq),Corn Soy Output by Region (in 1000 MT Corn eq)"
             if(self.view.resolution.value=="Global"):
                 self.view.name_dd.options = ["-","World Price"]
+                self.view.longname.value="<br><br>World Corn Soy Price(in USD / MT)"
         return
     
     def cb_model_mapping_type(self,_):
@@ -321,6 +344,8 @@ class Controller(logging.Handler):
         self.view.view_button_submit.disabled = True
         if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-"):
             return
+        final_result={"N-use Grid":"Nitrogen Use by Grid, Type (in MT)","Water Use Grid":"Water Use by Grid (in 1000 m^3 yr)","Water Use Region":"Water Use by Region (in 1000 m^3 yr)","Water per Ha":"Water per Ha by Region (in m^3 yr / ha)","Land Use Region Type":"Cropland Area by Region, Type (in 1000 ha)","Land Use Region":"Cropland Area by Region (in 1000 ha)","Output Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Yield Region":"Crop Yield by Region (in MT per ha)","Regional Price":"Corn Soy Supply Price by Region (in USD / MT)","Net Export":"Corn Soy Net Exports by Region (in 1000 MT Corn eq)","Output Region":"Corn Soy Output by Region (in 1000 MT Corn eq)","World Price":"World Corn Soy Price(in USD / MT)"}
+        self.view.longname.value="<br><br><br>"+final_result[self.view.name_dd.value]
         if(self.view.system_component.value=="Production" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Output Grid"):
             self.view.result_to_view.disabled = False
             self.view.result_to_view.options = ["-","Irrigated","Rainfed"]

@@ -85,6 +85,7 @@ class View:
         self.view_button_submit = None
         self.view_vbox = None
         self.selectable_window_vbox = None
+        self.longname = None
         #About Tab
         #################################
 
@@ -241,8 +242,8 @@ class View:
         self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
         
         self.view_button_submit = ui.Button(description = 'SUBMIT')
-        
-        content=section("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout)])
+        self.longname = ui.HTML(value="Long Name will be displayed here")
+        content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout),self.longname])
         
         map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
         freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
