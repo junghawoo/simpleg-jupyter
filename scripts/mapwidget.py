@@ -28,7 +28,7 @@ gdal.UseExceptions()
 
 class CustomMap(Map):
     def __init__(self, width: str, height: str):
-        super().__init__(scroll_wheel_zoom=True, zoom_control=False)
+        super().__init__(scroll_wheel_zoom=True, zoom_control=False,world_copy_jump = True)
         self.layout = Layout(width=width, height=height, margin="8px 0px 0px 0px")
         self.center = (39.5, -98.35)
         self.zoom = 4
@@ -221,6 +221,7 @@ class LegendBar(VBox):
                 current_value = min_ + i * increment
                 bucket = self._create_bucket(current_value, self.colors[i])
                 buckets.append(bucket)
+        buckets.reverse()
         self.children = buckets
         self.style_ = self._create_style(bucket_number=len(buckets), hidden=False)
 

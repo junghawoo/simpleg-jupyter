@@ -2,7 +2,8 @@ from multiprocessing import cpu_count
 import shutil
 from pathlib import Path
 from typing import Tuple, Optional
-
+import os, datetime
+import sys
 from ipyleaflet import TileLayer
 from osgeo import gdal
 from osgeo.gdal import DEMProcessing
@@ -16,7 +17,14 @@ from model.variableutil import VariableModel
 from utils import SIMPLEUtil
 from utils.misc import NODATA
 from utils.experimentutil import ExperimentManager
-
+import pandas as pd
+import geopandas as gpd
+from ipyleaflet import GeoData,Choropleth
+import branca.colormap as cm
+import fiona 
+import numpy as np
+import json
+import branca.colormap as cm
 
 # PYTHON GOTCHAS: https://gdal.org/api/python_gotchas.html
 gdal.UseExceptions()
@@ -220,10 +228,54 @@ class VectorLayerUtil:
         print(variable_model.file_path())
         assert variable_model.file_path().exists()
         assert variable_model.is_vector()
-
         self.variable_model: VariableModel = variable_model
-
-        # TODO: Finish the create layer logic
+        self.map_df = None 
 
     def create_layer(self):
-        return TileLayer(name=self.variable_model.file_path().stem)
+        shp_file = gpd.read_file(self.variable_model.file_path())
+        self.map_df=shp_file.to_crs(4326)
+        #csv_data = pd.read_csv(str(self.variable_model.file_path())[:-3]+"csv")
+        #Temporary File to store GeoJSON version of data
+        temp_file = str(self.variable_model.file_path().parent) + ".geojson"
+        self.map_df.to_file(temp_file, driver='GeoJSON')
+        #Using the GeoJSON version of the file to process the data
+        with open(temp_file, 'r') as f:
+            geo_json_data = json.load(f)
+            #Region based data extraction
+            for d in geo_json_data["features"]:
+               d["REG"] = d["properties"]["REG"]
+
+            #print(geo_json_data)
+            #Taking out Region Vs Value dictionary to map out a color scheme based on number values
+            mapping  = dict(zip(self.map_df["REG"].str.strip(), self.map_df["DATA"]))
+            #Creating the color scheme to match the legend
+            linear = cm.LinearColormap([(255,0,0),(255,51,0),(255,119,0),(255,187,0),(255,255,0),(204,255,0),(153,255,0),(102,255,0),(38,191,0),(0,102,0)],
+                 vmin=min(self.map_df['DATA']), vmax=max(self.map_df['DATA']))
+            #display(linear) #Display the color scheme
+            #print(map_df)
+            #print(list(mapping.items())[:10])
+            #print(geo_json_data['features'][0])
+            #The Choropleth widget is used to add color to the regions
+            if(min(self.map_df['DATA']) == max(self.map_df['DATA'])):
+                layer = GeoData(geo_dataframe=self.map_df,style = {'color':'black','fillColor':'rgb(0,102,0)','fillOpacity':0.7})
+            else:
+                layer = Choropleth(
+                    geo_data=geo_json_data,
+                    choro_data=mapping,
+                    colormap=linear,
+                    style={'fillOpacity': 0.7, "color":"black"},
+                    key_on="REG"
+                    )
+            #print(layer.colormap)
+            #map_wid.add_layer(layer)
+            #map_wid._legend_bar.refresh(min(map_df['DATA']), max(map_df['DATA'])/0.9)
+            #print(mapping)
+        return layer
+    
+    def create_legend(self,map_wid):
+       
+        if(min(self.map_df['DATA']) == max(self.map_df['DATA'])):
+                map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA'])) 
+        else:
+                map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA'])/0.9)
+        return

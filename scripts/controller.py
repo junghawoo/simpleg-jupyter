@@ -20,6 +20,14 @@ from IPython.display import clear_output
 from IPython.display import HTML
 from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
+import pandas as pd
+import geopandas as gpd
+from ipyleaflet import GeoData,Choropleth
+import branca.colormap as cm
+import fiona 
+import numpy as np
+import json
+import branca.colormap as cm
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -231,10 +239,14 @@ class Controller(logging.Handler):
                 map_id = map_id.replace(" ","")
                 map_id_1 = map_id.split("and")[-1]
                 map_id = map_id.split("and")[0]
-                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
-                variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
+                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
+                variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
                 map_wid = mapbox.children[0]
+                if len(map_wid.layers) > 1: 
+                    map_wid.remove_layer(map_wid.layers[-1])
                 map_wid_1 =mapbox.children[1]
+                if len(map_wid_1.layers) > 1:
+                    map_wid_1.remove_layer(map_wid_1.layers[-1])
                 if variable_model.is_raster():
                     layer_util = RasterLayerUtil(variable_model)
                     layer = layer_util.create_layer()
@@ -247,14 +259,23 @@ class Controller(logging.Handler):
                 elif variable_model.is_vector():
                     layer_util = VectorLayerUtil(variable_model)
                     layer = layer_util.create_layer()
+                    map_wid.add_layer(layer)
+                    layer_util.create_legend(map_wid)
+                    
+                    layer_util = VectorLayerUtil(variable_model_1)
+                    layer = layer_util.create_layer()
+                    map_wid.add_layer(layer)
+                    layer_util.create_legend(map_wid_1)
                 continue
             #Below is single map processing
             mapbox = self.view.view_vbox.children[i]
             map_id = mapbox.get_title(0)
             map_id = map_id.replace("Map ID: ","")
-            variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value))
+            variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
 
             map_wid = mapbox.children[0].children[0]
+            if len(map_wid.layers) > 1:
+                map_wid.remove_layer(map_wid.layers[-1])
             if variable_model.is_raster():
                 layer_util = RasterLayerUtil(variable_model)
                 layer = layer_util.create_layer()
@@ -262,6 +283,8 @@ class Controller(logging.Handler):
             elif variable_model.is_vector():
                 layer_util = VectorLayerUtil(variable_model)
                 layer = layer_util.create_layer()
+                map_wid.add_layer(layer)
+                layer_util.create_legend(map_wid)
         return
     
     def cb_model_mapping(self,_):
@@ -324,7 +347,7 @@ class Controller(logging.Handler):
                 self.view.name_dd.options = ["-","Land Use Grid"]
                 self.view.longname.value="<br><br>Cropland Area by Grid, Type (in 1000 ha)<br>"
             if(self.view.resolution.value=="Regional"):
-                self.view.name_dd.options = ["-","Land Use Region Type","Land Use Region"]
+                self.view.name_dd.options = ["-","Land Use Region Type"," Land Use-Region"]
                 self.view.longname.value="<br><br>Cropland Area by Region, Type (in 1000 ha),Cropland Area by Region (in 1000 ha)<br>"
         
         if(self.view.system_component.value=="Production"):
@@ -344,20 +367,23 @@ class Controller(logging.Handler):
         self.view.view_button_submit.disabled = True
         if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-"):
             return
-        final_result={"N-use Grid":"Nitrogen Use by Grid, Type (in MT)","Water Use Grid":"Water Use by Grid (in 1000 m^3 yr)","Water Use Region":"Water Use by Region (in 1000 m^3 yr)","Water per Ha":"Water per Ha by Region (in m^3 yr / ha)","Land Use Region Type":"Cropland Area by Region, Type (in 1000 ha)","Land Use Region":"Cropland Area by Region (in 1000 ha)","Output Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Yield Region":"Crop Yield by Region (in MT per ha)","Regional Price":"Corn Soy Supply Price by Region (in USD / MT)","Net Export":"Corn Soy Net Exports by Region (in 1000 MT Corn eq)","Output Region":"Corn Soy Output by Region (in 1000 MT Corn eq)","World Price":"World Corn Soy Price(in USD / MT)","Land Use Grid":"Cropland Area by Grid, Type (in 1000 ha)"}
+        final_result={"N-use Grid":"Nitrogen Use by Grid, Type (in MT)","Water Use Grid":"Water Use by Grid (in 1000 m^3 yr)","Water Use Region":"Water Use by Region (in 1000 m^3 yr)","Water per Ha":"Water per Ha by Region (in m^3 yr / ha)","Land Use Region Type":"Cropland Area by Region, Type (in 1000 ha)"," Land Use-Region":"Cropland Area by Region (in 1000 ha)","Output Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Yield Region":"Crop Yield by Region (in MT per ha)","Regional Price":"Corn Soy Supply Price by Region (in USD / MT)","Net Export":"Corn Soy Net Exports by Region (in 1000 MT Corn eq)","Output Region":"Corn Soy Output by Region (in 1000 MT Corn eq)","World Price":"World Corn Soy Price(in USD / MT)","Land Use Grid":"Cropland Area by Grid, Type (in 1000 ha)"}
         self.view.longname.value="<br><br><br>"+final_result[self.view.name_dd.value]
         if(self.view.system_component.value=="Production" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Output Grid"):
             self.view.result_to_view.disabled = False
             self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
-        if(self.view.system_component.value=="Land" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Land Use Grid"):
+        elif(self.view.system_component.value=="Land" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="Land Use Grid"):
             self.view.result_to_view.disabled = False
             self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
-        if(self.view.system_component.value=="Land" and self.view.resolution.value=="Regional" and self.view.name_dd.value=="Land Use Region Type"):
+        elif(self.view.system_component.value=="Land" and self.view.resolution.value=="Regional" and self.view.name_dd.value=="Land Use Region Type"):
             self.view.result_to_view.disabled = False
             self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
-        if(self.view.system_component.value=="Environment" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="N-use Grid"):
+        elif(self.view.system_component.value=="Environment" and self.view.resolution.value=="Geospatial" and self.view.name_dd.value=="N-use Grid"):
             self.view.result_to_view.disabled = False
-            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]        
+            self.view.result_to_view.options = ["-","Irrigated","Rainfed"]
+        else:          
+            self.view.result_to_view.options = ["-"]
+            self.view.result_to_view.disabled = True
         return
     
     def cb_result_to_view(self,_):
