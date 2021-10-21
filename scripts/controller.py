@@ -28,6 +28,8 @@ import fiona
 import numpy as np
 import json
 import branca.colormap as cm
+from pathlib import Path
+import subprocess
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -115,9 +117,8 @@ class Controller(logging.Handler):
             # Connect UI widgets to callback methods ("cb_...").
             #   Methods listed below will be called when user activates widget.
             #   Format: <widget>.on_click/observe(<method_to_be_called>...)
-            self.view.submit_button.on_click(self.cb_submit_model)
+            #self.view.submit_button.on_click(self.cb_submit_model)
             #self.view.selectable_window.observe(self.refresh_manage_jobs)
-            self.view.refresh_btn.on_click(self.refresh_manage_jobs)
             self.view.display_btn.on_click(self.cb_display_btn)
             self.view.view_button_submit.on_click(self.cb_tif_display)
             self.view.system_component.observe(self.cb_model_mapping)
@@ -127,7 +128,7 @@ class Controller(logging.Handler):
             self.view.result_to_view.observe(self.cb_result_to_view)
             self.view.compare_btn.on_click(self.cb_compare_models)
             self.view.refresh_btn.on_click(self.refresh_manage_jobs)
-            #self.view.upload_btn.on_click(self.cb_upload_btn_create)
+            self.view.submit_button.on_click(self.cb_upload_btn_create)
             
 
         except Exception:
@@ -136,6 +137,49 @@ class Controller(logging.Handler):
             
     def cb_test(self, _):
         print(self.view.model_dd.value)
+    
+    def cb_upload_btn_create(self, _):
+        #Checking to see if the input is valid
+        myupload = self.view.upload_btn.value
+        #print(myupload)
+        uploaded_filename = list(myupload.keys())[0]
+        content = myupload[uploaded_filename]['content']
+        if uploaded_filename[-4:] != ".cmf":
+            return
+        if self.view.model_dd.value == "-":
+            return
+        
+        #Creating the sql entry 
+        user = os.popen("whoami").read().rstrip('\n')
+        job_id = self.db_class_import.createNewJob(self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"Processing",user,"0")
+        file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
+        Path(file_location).mkdir(parents=True, exist_ok=True)
+        command = None
+        command_simple = None
+        self.refresh_manage_jobs("None")
+        #Create File to submit and set the parameters
+        if self.view.model_dd.value == "Custom Crops":
+            with open(file_location+'/SIMPLE_G_AllCrops.cmf', 'w') as f: f.write(content.decode("utf-8"))
+            command = "SIMPLE_G_AllCrops.cmf"
+            command_simple = "simpleg_us_all"
+        if self.view.model_dd.value == "Custom CornSoy":
+            with open(file_location+'/SIMPLE_G_CornSoy.cmf', 'w') as f: f.write(content.decode("utf-8"))
+            command = "SIMPLE_G_CornSoy.cmf"
+            command_simple = "simpleg_us_corn"
+        #Run the submit tool    
+        submit = subprocess.run(["submit", "-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
+        # Path needs to be outputs not out
+        os.rename(file_location+"/out",file_location+"/outputs")
+        get_id = submit.stdout.decode("utf-8")
+        start = get_id.find("Run") + 4
+        end = get_id.find("registered") -1
+        remote_job_id = get_id[start:end]
+        self.db_class_import.updateRemoteID(job_id,remote_job_id)
+        self.db_class_import.updateJobStatus(job_id,"Completed")
+        self.refresh_manage_jobs("None")
+        
+         
+        return 
     
     def jobs_selected(self,_):
         #This will return a list of the job ids which are selected in the job_selection variable
@@ -146,17 +190,9 @@ class Controller(logging.Handler):
                 self.view.job_selection.append(jobid)
         return
     
-    def cb_submit_model(self,_):
-        if self.view.model_dd == "-":
-            return 
-        #Creating the database connection
-        self.db_class_import.createNewJob(self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"None",os.popen("whoami").read(),0,)
-        print("Submit")
-        #Refresh the manage tab
-        self.refresh_manage_jobs()
-        return 
     
     def refresh_manage_jobs(self,_):
+        self.view.selectable_window_vbox.children = []
         #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
@@ -189,7 +225,8 @@ class Controller(logging.Handler):
             self.view.selectable_window[row_counter,5:10] = ui.HTML(row[8])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-        self.view.checkboxes["0"].disabled = True        
+        self.view.checkboxes["0"].disabled = True
+        self.view.selectable_window_vbox.children=[self.view.selectable_window]
         return
     
     def cb_display_btn(self,_):

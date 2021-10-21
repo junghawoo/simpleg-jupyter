@@ -75,13 +75,18 @@ class DBManager:
         rows = self.getJobList()
         
         con = sqlite3.connect(self.DB_FILE)
+        job_id_new = 0
+        for row in rows:
+            if(int(row[1]) > job_id_new):
+                job_id_new = int(row[1])
+        job_id_new += 1 
         #conn = self.conn
         conn = con.cursor()
         sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,remotejobid,description) values (?,?,?,?,?,?,?,?,?);'
-        conn.execute(sql, (str(len(rows)),str(len(rows)),submit_time,author,status,name,model_dd,remotejobid,description))
+        conn.execute(sql,(job_id_new,job_id_new,submit_time,author,status,name,model_dd,remotejobid,description))
         con.commit()
         con.close()
-        return 
+        return job_id_new
 
     def updateJobInfo(self, jobid, params):
         print('IN HERE!')
@@ -101,7 +106,7 @@ class DBManager:
 
         return True
 
-    def updateJobStatus(self, jobid, status, submit_id):
+    def updateJobStatus(self, jobid, status):
         sql = 'update SIMPLEJobs set jobstatus = ? where jobid = ?;'
 
         con = sqlite3.connect(self.DB_FILE)
@@ -109,12 +114,20 @@ class DBManager:
         conn.execute(sql, (status, str(jobid)))
         con.commit()
         con.close()
-        param = {}
-        param['submitId'] = submit_id
 
         return True
 
+    def updateRemoteID(self,jobid,remote_jobid):
+        sql = 'update SIMPLEJobs set remotejobid = ? where jobid = ?;'
 
+        con = sqlite3.connect(self.DB_FILE)
+        conn = con.cursor()
+        conn.execute(sql, (remote_jobid, str(jobid)))
+        con.commit()
+        con.close()
+
+        return True
+        
     def deleteJob(self, jobid):
         conn = sqlite3.connect(self.DB_FILE)
         conn = conn.cursor()

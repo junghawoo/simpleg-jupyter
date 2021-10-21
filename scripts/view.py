@@ -143,7 +143,7 @@ class View:
         #Upload Button
         self.upload_text=ui.Label(value="Configuration File:")
         self.upload_btn=ui.FileUpload(
-            accept='',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
+            accept='.cmf',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
             multiple=False  # True to accept multiple files upload else False
         )
         self.upload_btn.style.button_color = 'gray'
