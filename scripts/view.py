@@ -73,9 +73,11 @@ class View:
         self.display_btn = None
         self.compare_btn = None
         self.checkboxes = {}
-        self.jobs = []
+        self.shared_selectable_window = None
+        self.shared_checkboxes = {}
         
         # View Tab 
+        self.job_display = []
         self.system_component = None
         self.spatial_resolution = None
         self.type_of_result = None
@@ -85,6 +87,7 @@ class View:
         self.view_button_submit = None
         self.view_vbox = None
         self.selectable_window_vbox = None
+        self.shared_selectable_window_vbox = None
         self.longname = None
         #About Tab
         #################################
@@ -214,13 +217,52 @@ class View:
         self.compare_btn.style.button_color='gray'
         self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
         self.selectable_window_vbox = ui.VBox(children=[self.selectable_window])
-        #Join the widgets
-        content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box]
-        contentvbox = ui.VBox(content)
-        #contentvbox.layout.align_self = 'center'
-        
         #Assign the grid layout to the Vbox and the content
-        self.selectable_window.options = list_of_jobs
+        self.selectable_window.options = list_of_jobs        
+        #Shared Job Display
+        try:
+            dbfile = "/data/groups/simpleggroup/job/job.db"
+            conn = sqlite3.connect(dbfile)
+            cursor = conn.cursor()
+            #Database is always created first so the next statement should not give an error
+            cursor.execute("SELECT * FROM SIMPLEJobs")
+            rows = cursor.fetchall()
+        except:
+            #Join the widgets
+            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box] 
+            contentvbox = ui.VBox(content)
+        else:
+            #Storing the contents of the db in list_of_jobs
+            list_of_jobs = []
+            #For alignment finding the max length of each column
+            col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
+            for row in rows:
+                str_row = "".join(str(word).ljust(col_width) for word in row)
+                list_of_jobs.append(str_row)
+            cursor.close()
+            conn.close()
+            self.shared_checkboxes = {}
+            self.shared_selectable_window = ui.GridspecLayout(len(rows)+1,11,height="auto")
+            row_counter = 0
+            rows.insert(0,[0,'SubmitID','SubmitTime','Author','Job Status','Job Name','Model Type','Published','Description'])
+            #Create a new dictionary key value pair for each jobid and checkbox
+            for row in rows:
+                self.shared_checkboxes[str(row[0])]=ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
+                self.shared_selectable_window[row_counter,:1] = self.shared_checkboxes[list(self.shared_checkboxes.keys())[-1]]
+                self.shared_selectable_window[row_counter,1] = ui.HTML(str(row[0]))
+                self.shared_selectable_window[row_counter,2] = ui.HTML(row[6])
+                self.shared_selectable_window[row_counter,3:5] = ui.HTML(row[5])
+                self.shared_selectable_window[row_counter,5:10] = ui.HTML(row[8])
+                self.shared_selectable_window[row_counter,10] = ui.HTML(row[4])
+                row_counter = row_counter + 1
+            self.shared_checkboxes["0"].disabled = True
+            self.shared_selectable_window_vbox = ui.VBox(children=[self.shared_selectable_window])
+            #Assign the grid layout to the Vbox and the content
+            self.shared_selectable_window.options = list_of_jobs        
+            #Join the widgets
+            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),section("Shared Jobs",[self.shared_selectable_window_vbox]),self.bottom_box] 
+            contentvbox = ui.VBox(content)
+
         return contentvbox
     
     def viewTab(self):
@@ -270,11 +312,5 @@ class View:
         self.view_button_submit.disabled = True
         self.view_vbox = ui.VBox(children=[content])
         return self.view_vbox
-    
-    ###################################################
-    ###################################################
-    ###################################################
-    ###################################################
-    ###################################################  
     
    

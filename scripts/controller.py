@@ -117,8 +117,6 @@ class Controller(logging.Handler):
             # Connect UI widgets to callback methods ("cb_...").
             #   Methods listed below will be called when user activates widget.
             #   Format: <widget>.on_click/observe(<method_to_be_called>...)
-            #self.view.submit_button.on_click(self.cb_submit_model)
-            #self.view.selectable_window.observe(self.refresh_manage_jobs)
             self.view.display_btn.on_click(self.cb_display_btn)
             self.view.view_button_submit.on_click(self.cb_tif_display)
             self.view.system_component.observe(self.cb_model_mapping)
@@ -127,7 +125,7 @@ class Controller(logging.Handler):
             self.view.type_of_result.observe(self.cb_submit_button_enable)
             self.view.result_to_view.observe(self.cb_result_to_view)
             self.view.compare_btn.on_click(self.cb_compare_models)
-            self.view.refresh_btn.on_click(self.refresh_manage_jobs)
+            self.view.refresh_btn.on_click(self.refresh_manage_jobs_status)
             self.view.submit_button.on_click(self.cb_upload_btn_create)
             
 
@@ -139,6 +137,7 @@ class Controller(logging.Handler):
         print(self.view.model_dd.value)
     
     def cb_upload_btn_create(self, _):
+        self.view.submit_button.disabled = True
         #Checking to see if the input is valid
         myupload = self.view.upload_btn.value
         #print(myupload)
@@ -156,6 +155,7 @@ class Controller(logging.Handler):
         Path(file_location).mkdir(parents=True, exist_ok=True)
         command = None
         command_simple = None
+        self.view.refresh_btn.disabled = True
         self.refresh_manage_jobs("None")
         #Create File to submit and set the parameters
         if self.view.model_dd.value == "Custom Crops":
@@ -167,27 +167,31 @@ class Controller(logging.Handler):
             command = "SIMPLE_G_CornSoy.cmf"
             command_simple = "simpleg_us_corn"
         #Run the submit tool    
-        submit = subprocess.run(["submit", "-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
+        submit = subprocess.run(["submit", "--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
         # Path needs to be outputs not out
-        os.rename(file_location+"/out",file_location+"/outputs")
         get_id = submit.stdout.decode("utf-8")
-        start = get_id.find("Run") + 4
-        end = get_id.find("registered") -1
+        start = get_id.find("run") + 4
+        end = get_id.find(".\n")
         remote_job_id = get_id[start:end]
         self.db_class_import.updateRemoteID(job_id,remote_job_id)
-        self.db_class_import.updateJobStatus(job_id,"Completed")
+        self.db_class_import.updateJobStatus(job_id,"Pending")
         self.refresh_manage_jobs("None")
-        
-         
+        self.view.refresh_btn.disabled = False
+        self.view.submit_button.disabled = False 
         return 
     
     def jobs_selected(self,_):
         #This will return a list of the job ids which are selected in the job_selection variable
         #Running a loop to check selected checkboxes for the box
+        #['job_id','private or public']
+        #1 for private 0 for public
         self.view.job_selection = []
         for jobid,checkbox in self.view.checkboxes.items():
             if(checkbox.value == True):
-                self.view.job_selection.append(jobid)
+                self.view.job_selection.append([jobid,1])
+        for jobid,checkbox in self.view.shared_checkboxes.items():
+            if(checkbox.value == True):
+                self.view.job_selection.append([jobid,0])
         return
     
     
@@ -229,25 +233,77 @@ class Controller(logging.Handler):
         self.view.selectable_window_vbox.children=[self.view.selectable_window]
         return
     
+    def refresh_manage_jobs_status(self,_):
+        self.view.refresh_btn.disabled = True
+        #Temporary Database Access will be refreshed with a global variable and the callback function
+        dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
+        conn = sqlite3.connect(dbfile)
+        cursor = conn.cursor()
+        #Database is always created first so the next statement should not give an error
+        cursor.execute("SELECT * FROM SIMPLEJobs")
+        rows = cursor.fetchall()
+        #Storing the contents of the db in list_of_jobs
+        list_of_jobs = []
+        cursor.close()
+        conn.close()
+        #For alignment finding the max length of each column
+        for row in rows:
+            job_id = row[1]
+            remote_job_id = row[7]
+            if row[4] in ['Pending', 'Queued', 'Running']:
+                submit = subprocess.run(["submit", "--status" ,str(remote_job_id) ], capture_output=True)
+                output = submit.stdout.decode("utf-8")
+                if len(output) < 5 or 'Completing' in output:
+                    file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id) + "/out"
+                    if os.path.isdir(file_location):
+                        self.db_class_import.updateJobStatus(job_id,"Completed")
+                        file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
+                        os.rename(file_location+"/out",file_location+"/outputs")
+                    continue
+                if 'Registered' in output or 'Submitted' in output:
+                    self.db_class_import.updateJobStatus(job_id,"Pending")
+                    continue
+                if 'Queued' in output:
+                    self.db_class_import.updateJobStatus(job_id,"Queued")
+                    continue
+                if 'Running' in output:
+                    self.db_class_import.updateJobStatus(job_id,"Running")
+                    continue
+        self.refresh_manage_jobs("None")        
+        self.view.refresh_btn.disabled = False
+        return
+        
+    
     def cb_display_btn(self,_):
+        self.view.job_display = []
+        content = self.view.view_vbox.children[0]
+        self.view.view_vbox.children = tuple([content])
         self.jobs_selected("Garbage Value")
         if(len(self.view.job_selection)!=1):
-            self.view.instructions_label.value ="Select one model only for display"
+            self.view.instructions_label.value ="Select one model only for display, check shared jobs as well"
         else:    
             self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
         #print(self.view.checkboxes)
         #print(self.view.checkboxes.keys())
         for job in self.view.checkboxes.keys():
             if self.view.checkboxes[job].value == True:
-                self.create_map_widget(job)
+                self.create_map_widget(job,1)
+                self.view.job_display.append([job,1])
                 #print(self.view.checkboxes[job])
                 break
+        for job in self.view.shared_checkboxes.keys():
+            if self.view.shared_checkboxes[job].value == True:
+                self.create_map_widget(job,0)
+                self.view.job_display.append([job,0])
+                break           
         return
     
-    def create_map_widget(self,map_id):
+    def create_map_widget(self,map_id,is_private):
         map_wid = CustomMap("1200px","720px")
-        mapbox=section("Map ID: "+str(map_id),[map_wid])
-        
+        if is_private == 1:
+            mapbox=section("Map ID(Private Job): "+str(map_id),[map_wid])
+        else:
+            mapbox=section("Map ID(Shared Job): "+str(map_id),[map_wid])
         temp_list = list(self.view.view_vbox.children)
         temp_list.append(mapbox)
         self.view.view_vbox.children = tuple(temp_list)
@@ -257,7 +313,15 @@ class Controller(logging.Handler):
         map_wid = CustomMap("600px","720px")
         map_wid_1 = CustomMap("600px","720px")
         map_wid.link(map_wid_1)
-        mapbox=section_horizontal("Map: "+str(map_id[0])+" and "+str(map_id[1]),[map_wid,map_wid_1])
+        if map_id[0][1] == 1:
+            map_1 = "Private JobID "+str(map_id[0][0])
+        else:
+            map_1 = "Public JobID "+str(map_id[0][0])
+        if map_id[1][1] == 1:
+            map_2 = "Private JobID "+str(map_id[1][0])
+        else:
+            map_2 = "Public JobID "+str(map_id[1][0])
+        mapbox=section_horizontal("Map: "+map_1+" and "+map_2,[map_wid,map_wid_1])
         mapbox.children[0].children[0].layout= ui.Layout(border='solid',width="600px",height="720px")
         mapbox.children[0].children[1].layout= ui.Layout(border='solid',width="600px",height="720px")
         temp_list = list(self.view.view_vbox.children)
@@ -271,19 +335,12 @@ class Controller(logging.Handler):
             #Checking to see whether the Accordian has a single map or multiple maps
             if(len(self.view.view_vbox.children[i].children[0].children)>1):
                 mapbox = self.view.view_vbox.children[i].children[0]
-                map_id = self.view.view_vbox.children[i].get_title(0)
-                map_id = map_id.replace("Map: ","")
-                map_id = map_id.replace(" ","")
-                map_id_1 = map_id.split("and")[-1]
-                map_id = map_id.split("and")[0]
-                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
-                variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
+                map_id = self.view.job_selection[0][0]
+                map_id_1 = self.view.job_selection[1][0]
+                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
+                variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
                 map_wid = mapbox.children[0]
-                if len(map_wid.layers) > 1: 
-                    map_wid.remove_layer(map_wid.layers[-1])
                 map_wid_1 =mapbox.children[1]
-                if len(map_wid_1.layers) > 1:
-                    map_wid_1.remove_layer(map_wid_1.layers[-1])
                 if variable_model.is_raster():
                     layer_util = RasterLayerUtil(variable_model)
                     layer = layer_util.create_layer()
@@ -301,18 +358,20 @@ class Controller(logging.Handler):
                     
                     layer_util = VectorLayerUtil(variable_model_1)
                     layer = layer_util.create_layer()
-                    map_wid.add_layer(layer)
+                    map_wid_1.add_layer(layer)
                     layer_util.create_legend(map_wid_1)
-                continue
+                    
+                if len(map_wid.layers) > 2: 
+                    map_wid.remove_layer(map_wid.layers[1])
+                if len(map_wid_1.layers) > 2:
+                    map_wid_1.remove_layer(map_wid_1.layers[1])
+                break
             #Below is single map processing
             mapbox = self.view.view_vbox.children[i]
-            map_id = mapbox.get_title(0)
-            map_id = map_id.replace("Map ID: ","")
-            variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value)
+            map_id = self.view.job_selection[0][0]
+            variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
 
             map_wid = mapbox.children[0].children[0]
-            if len(map_wid.layers) > 1:
-                map_wid.remove_layer(map_wid.layers[-1])
             if variable_model.is_raster():
                 layer_util = RasterLayerUtil(variable_model)
                 layer = layer_util.create_layer()
@@ -322,6 +381,9 @@ class Controller(logging.Handler):
                 layer = layer_util.create_layer()
                 map_wid.add_layer(layer)
                 layer_util.create_legend(map_wid)
+            if len(map_wid.layers) > 2:
+                map_wid.remove_layer(map_wid.layers[1])            
+            break
         return
     
     def cb_model_mapping(self,_):
@@ -444,6 +506,8 @@ class Controller(logging.Handler):
         return
     
     def cb_compare_models(self,_):
+        content = self.view.view_vbox.children[0]
+        self.view.view_vbox.children = tuple([content])
         self.jobs_selected("Garbage Value")
         if(len(self.view.job_selection)!=2):
             self.view.instructions_label.value = "Select exactly 2 models to compare"
@@ -451,335 +515,3 @@ class Controller(logging.Handler):
             self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
             self.create_map_widget_compare(self.view.job_selection)
         return
-    ################################################################################
-    comment = '''def cb_data_source_selected(self, change):
-        """User selected a data file"""
-        self.logger.debug('At')
-
-        try:
-            choice = change['owner'].value
-
-            if not choice == self.view.EMPTY:
-                self.view.update_data_status(self.view.DATA_LOAD)
-                self.model.get_data(choice)
-                self.view.update_data_status(self.model.data)
-                self.view.update_dynamic_selections()
-        except Exception:
-            self.logger.error('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_model_selected(self, change):
-        """User changed their model filter selection"""
-        self.logger.debug('At')
-
-        try:
-            self.view.model_selected(change['owner'].value)
-        except Exception:
-            self.logger.error('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_apply_filter(self, _):
-        """User hit button to search for data"""
-        self.logger.debug('At')
-
-        if not self.model.valid:
-            return
-
-        try:
-            self.view.output(FILTER_PROG, self.view.filter_output)
-            self.view.filter_out_export.clear_output()
-
-            # Use specified criteria to search for data, (results stored in model)
-            self.model.clear_filter_results()
-            self.model.search(
-                list(self.view.filter_mod.value),
-                list(self.view.filter_scn.value),
-                list(self.view.filter_reg.value),
-                list(self.view.filter_ind.value),
-                list(self.view.filter_sec.value),
-                list(self.view.filter_yrs.value)
-            )
-
-            # Refresh output widgets
-            self.view.update_filtered_output()
-            self.view.set_plot_status()
-            self.cb_refresh_harmonizers()
-
-        except Exception:
-            self.logger.error('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_ndisp_changed(self, _):
-        """User changed number of recs to display"""
-        try:
-            self.view.update_filtered_output()
-        except Exception:
-            self.logger.error('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_fill_data_export(self, _):
-        """User hit button to bulk download all data"""
-        self.logger.debug('At')
-
-        try:
-            # First, clear _RESULTS_ link because it might point to same file
-            self.view.export_msg('', self.view.filter_out_export)
-
-            # Create link for bulk data
-            if self.model.valid:
-                self.view.export_msg(CREATING_LINK, self.view.data_out_export)
-                filename = self.model.create_download_file(self.model.data, self.view.data_ddn_format.value)
-                self.view.export_link(filename, self.view.data_out_export)
-            else:
-                self.view.export_msg(NO_DATA_AVAIL, self.view.data_out_export)
-        except Exception:
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_fill_plot_export(self, _):
-        """User hit button to download image of plot"""
-        self.logger.debug('At')
-
-        try:
-            self.view.export_msg('...', self.view.viz_out_plot_export)
-            time.sleep(1)
-
-            # First, to save space, delete existing download file(s)
-            self.model.delete_downloads(DOWNLOAD_PLOT_NAME)
-
-            # Create link for image file
-            filename = DOWNLOAD_DATA_NAME + self.view.viz_ddn_plot_format.value
-            self.plot_figure.savefig(filename)
-            self.view.export_link(filename, self.view.viz_out_plot_export)
-        except Exception:
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_fill_results_export(self, _):
-        """User hit button to download results"""
-        self.logger.debug('At')
-
-        try:
-            # First, clear _DATA_ link because it might point to same file
-            self.view.export_msg('', self.view.data_out_export)
-
-            # Create link for filter results
-            if self.model.res_row_count > 0:
-                self.view.export_msg(CREATING_LINK, self.view.filter_out_export)
-                filename = self.model.create_download_file(self.model.results, self.view.filter_ddn_format.value)
-                self.view.export_link(filename, self.view.filter_out_export)
-            else:
-                self.view.export_msg(NO_RECS_AVAIL, self.view.filter_out_export)
-        except Exception:
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_refresh_harmonizers(self, _=None):
-        """User changed plot options, update harmonize widgets with values"""
-        self.logger.debug('At')
-
-        try:
-            self.view.set_harmonize(self.model.get_uniques_for(self.view.viz_ddn_plot_xaxis.value),
-                                    self.model.get_uniques_for(self.view.viz_ddn_plot_pivot.value))
-        except Exception:
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-            raise
-
-    def cb_plot_menu(self, change):
-        """User selected item from plot menu"""
-        # noinspection PyBroadException
-        try:
-            if not change['owner'].value == PLOT_SET_CUSTOM:
-                self.set_plot_config(change['owner'].value)
-                self.process_and_plot()
-        except Exception:
-            self.empty_plot(error=True)
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-
-    def cb_plot_button(self, _):
-        """User pressed plot button"""
-        # noinspection PyBroadException
-        try:
-            self.view.viz_ddn_plot_set.value = PLOT_SET_CUSTOM
-            self.process_and_plot()
-        except Exception:
-            self.empty_plot(error=True)
-            self.logger.debug('EXCEPTION\n' + traceback.format_exc())
-
-    def process_and_plot(self):
-        """Process data and plot it"""
-        self.logger.debug('At')
-
-        x = self.view.viz_ddn_plot_xaxis.value
-        y = self.view.viz_ddn_plot_yaxis.value
-        pivot = self.view.viz_ddn_plot_pivot.value
-        fill = self.view.viz_ddn_plot_fill.value
-        harm_row = self.view.viz_ddn_plot_harm_row.value
-        harm_col = self.view.viz_ddn_plot_harm_col.value
-
-        # Specify numeric axis(es)
-        numeric_xy = (x == F_VAL or x == F_YER,
-                      y == F_VAL or y == F_YER)
-
-        # Plot will be based on model's "processed" data
-        self.model.init_processed()
-
-        # Clear pivot table data
-        with self.view.viz_out_plot_data:
-            clear_output(wait=True)
-
-        self.model.pivot(x, pivot, y, self.view.viz_ddn_plot_aggfunc.value)
-
-        # Fill missing values (interpolate)?
-        if not fill == NONE_ITEM:
-            self.model.fill(fill)
-
-        # Index to year?
-
-        indexed_by = None
-
-        if self.view.viz_ckb_plot_index.value:
-
-            if x == F_YER and not harm_row == NONE_ITEM:
-                indexed_by = harm_row
-            elif y == F_YER and not harm_col == NONE_ITEM:
-                self.model.index(harm_col, on_row=False)
-                indexed_by = harm_col
-
-            if indexed_by is not None:
-                self.model.index(indexed_by)
-
-        # Harmonize?
-
-        harmonized = False
-
-        if (not harm_row == NONE_ITEM) and (not harm_col == NONE_ITEM):
-            self.model.harmonize(harm_row, harm_col)
-            harmonized = True
-
-        # Title
-
-        title = y + ' for ' + pivot + ' by ' + x
-
-        if indexed_by is not None:
-            if harmonized:
-                title += ', Harmonized: '
-
-                if indexed_by == harm_row:
-                    title += str(harm_col)
-                else:
-                    title += str(harm_row)
-
-            title += ', Index: ' + str(indexed_by) + '=100'
-
-        elif harmonized:
-            title += ', Harmonized: ' + str(harm_row) + ', ' + str(harm_col)
-
-        self.model.dropna()
-
-        # Show plot data
-        with self.view.viz_out_plot_data:
-            self.model.set_disp(self.model.processed, wide=True)
-            clear_output(wait=True)
-            display(self.model.processed)
-
-        # Draw plot based on processed data
-        self.draw_plot(title, x, y, numeric_xy)
-
-    def set_plot_config(self, choice):
-        """Update plot options"""
-        self.logger.debug('At, choice='+str(choice))
-
-        if choice == PLOT_SET_1:
-            self.view.viz_ddn_plot_type.value = PLOT_TYPE_LINE
-            self.view.viz_ddn_plot_xaxis.value = F_YER
-            self.view.viz_ddn_plot_yaxis.value = F_VAL
-            self.view.viz_ddn_plot_pivot.value = F_MOD
-            self.view.viz_ddn_plot_aggfunc.value = AGGF_SUM
-            self.view.viz_ddn_plot_fill.value = FILL_LINEAR
-        elif choice == PLOT_SET_2:
-            self.view.viz_ddn_plot_type.value = PLOT_TYPE_BAR
-            self.view.viz_ddn_plot_xaxis.value = F_MOD
-            self.view.viz_ddn_plot_yaxis.value = F_VAL
-            self.view.viz_ddn_plot_pivot.value = F_SCN
-            self.view.viz_ddn_plot_aggfunc.value = AGGF_MEAN
-            self.view.viz_ddn_plot_fill.value = NONE_ITEM
-        elif choice == PLOT_SET_3:
-            self.view.viz_ddn_plot_type.value = PLOT_TYPE_LINE
-            self.view.viz_ddn_plot_xaxis.value = F_YER
-            self.view.viz_ddn_plot_yaxis.value = F_VAL
-            self.view.viz_ddn_plot_pivot.value = F_MOD
-            self.view.viz_ddn_plot_aggfunc.value = AGGF_SUM
-            self.view.viz_ddn_plot_fill.value = FILL_CUBIC
-            self.view.viz_ddn_plot_harm_row.value = self.view.viz_ddn_plot_harm_row.options[1]
-            self.view.viz_ddn_plot_harm_col.value = self.view.viz_ddn_plot_harm_col.options[1]
-
-    def empty_plot(self, error=None):
-        """Display empty plot frame, with optional error message, in provided output widget"""
-        self.logger.debug('At, error='+str(error))
-
-        # noinspection PyBroadException
-        try:
-            if error:
-                title = self.view.PLOT_ERROR_MSG
-            else:
-                title = 'Plot'
-
-            with self.view.viz_out_plot_output:
-                clear_output(wait=True)
-                print()
-                fig, ax = plt.subplots(figsize=(PLOT_WIDTH, PLOT_HEIGHT))
-                ax.set_xlabel(PLOT_EMPTY_X_AXIS)
-                ax.set_ylabel(PLOT_EMPTY_Y_AXIS)
-                plt.title(title)
-                plt.grid()
-                self.plot_figure = plt.gcf()
-                plt.show()
-        except Exception:
-            plt.close()  # Clear any partial plot output
-            self.logger.debug('raising exception')
-            raise
-
-    def draw_plot(self, title, x_label, y_label, numeric_xy):
-        """Create plot image and display it in provided output widget"""
-        self.logger.debug('title=%s labels="%s","%s" num-xy=%s' % (title, x_label, y_label, str(numeric_xy)))
-
-        # noinspection PyBroadException
-        try:
-            with self.view.viz_out_plot_output:
-                # Clear existing plot output, including previous error msg
-                clear_output(wait=True)
-                print()
-
-                # Render plot - NOTE Assumes data is pandas datatframe TODO Abstract that?
-
-                fig, ax = plt.subplots()
-
-                if self.view.viz_ddn_plot_type.value == PLOT_TYPE_LINE:
-                    self.model.processed.plot(kind=PLOT_TYPE_LINE,
-                                              ax=ax, grid=True, title=title,
-                                              figsize=(PLOT_WIDTH, PLOT_HEIGHT),
-                                              marker=PLOT_LINE_DATA_MARKER)
-                else:
-                    self.model.processed.plot(kind=self.view.viz_ddn_plot_type.value,
-                                              ax=ax, grid=True, title=title,
-                                              figsize=(PLOT_WIDTH, PLOT_HEIGHT))
-                # Label axes
-                ax.set_xlabel(x_label)
-                ax.set_ylabel(y_label)
-
-                # Avoid scientific notation for limits on numeric axis(es)
-                if numeric_xy[0]:
-                    ax.ticklabel_format(axis='x', useOffset=False, style='plain')
-                if numeric_xy[1]:
-                    ax.ticklabel_format(axis='y', useOffset=False, style='plain')
-
-                # Update output widget with new plot
-                self.plot_figure = plt.gcf()
-                plt.show()
-                self.logger.debug('after plt.show()')
-        except Exception:
-            plt.close()  # Clear any partial plot output
-            self.logger.debug('raising exception')
-            raise
-'''

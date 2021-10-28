@@ -14,7 +14,7 @@ TYPE_OF_RESULT_TO_DIRNAME = {"Absolute Changes": "LVC", "Base Value": "LVB", "Up
 
 class VariableModel:
     def __init__(self, id_str: str, system_component: str, spatial_resolution: str, type_of_result: str,
-                 result_to_view: str, filter_min: int, filter_max: int, model_name:str):
+                 result_to_view: str, filter_min: int, filter_max: int, model_name:str,is_private: int):
         assert 0 <= filter_min <= filter_max <= 100
         self.id_str = id_str
         self.model_name: str = model_name
@@ -25,9 +25,10 @@ class VariableModel:
         self._result_to_view: str = VariableService.convert_result_to_view(result_to_view, self.id_str,
                                                                            self.system_component(),
                                                                            self.spatial_resolution(),
-                                                                           self.type_of_result(), self.model_name,to_display_name=True)
+                                                                           self.type_of_result(), self.model_name,is_private,to_display_name=True)
         self.filter_min: int = filter_min
         self.filter_max: int = filter_max
+        self.is_private:int = is_private
     def system_component(self, as_dirname=False) -> str:
         value = self._system_component
         if as_dirname:
@@ -64,7 +65,7 @@ class VariableModel:
         # view
 
         return VariableService.result_to_view_path(self.id_str, self.system_component(), self.spatial_resolution(),
-                                                   self.type_of_result(), self.result_to_view(),self.model_name)
+                                                   self.type_of_result(), self.result_to_view(),self.model_name,self.is_private)
 
     def is_raster(self):
         extension = splitext(str(self.file_path()))[1]
@@ -206,11 +207,11 @@ class VariableService:
 
     @classmethod
     def convert_result_to_view(cls, result_to_view: str, id_str: str, system_component: str, spatial_resolution: str,
-                               type_of_result: str,model_name: str, to_display_name=False, to_directory_name=False):
+                               type_of_result: str,model_name: str,is_private: int, to_display_name=False, to_directory_name=False):
         # Convert from display name to directory name or vice versa
         assert to_directory_name or to_display_name
-        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution)
-        simple_variable = cls.simple_variable(id_str, system_component,spatial_resolution,model_name) 
+        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
+        simple_variable = cls.simple_variable(id_str, system_component,spatial_resolution,model_name,is_private) 
         file_format = ".tif" if spatial_resolution.lower() == "geospatial" else ".shp"
         suffix = cls._result_to_view_suffix(result_to_view)
         name = None
@@ -264,21 +265,21 @@ class VariableService:
         return suffix
 
     @classmethod
-    def system_component_path(cls, id_str, system_component: str):
+    def system_component_path(cls, id_str, system_component: str,is_private: int):
         from utils.experimentutil import ExperimentManager
-        path_ = ExperimentManager.results_directory(id_str) / cls.convert_system_component(system_component,
+        path_ = ExperimentManager.results_directory(id_str,is_private) / cls.convert_system_component(system_component,
                                                                                            to_directory_name=True)
         return path_
 
     @classmethod
-    def spatial_resolution_path(cls, id_str: str, system_component: str, spatial_resolution: str) -> Path:
-        path_ = cls.system_component_path(id_str, system_component) \
+    def spatial_resolution_path(cls, id_str: str, system_component: str, spatial_resolution: str,is_private: int) -> Path:
+        path_ = cls.system_component_path(id_str, system_component,is_private) \
                 / cls.convert_spatial_resolution(spatial_resolution, to_directory_name=True)
         return path_
 
     @classmethod
-    def simple_variable(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str) -> str:
-        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution)
+    def simple_variable(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str,is_private: int) -> str:
+        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
         directories = listdir(str(spatial_resolution_path))
         simple_variable = directories[0]
         if(spatial_resolution =="Regional"):
@@ -304,25 +305,25 @@ class VariableService:
         return simple_variable
 
     @classmethod
-    def simple_variable_path(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str) -> Path:
-        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution)
+    def simple_variable_path(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str,is_private: int) -> Path:
+        spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
         # Assumption: There is only one simple variable directory
-        simple_variable = cls.simple_variable(id_str, system_component, spatial_resolution,model_name)
+        simple_variable = cls.simple_variable(id_str, system_component, spatial_resolution,model_name,is_private)
         return spatial_resolution_path / simple_variable
 
     @classmethod
     def type_of_result_path(cls, id_str: str, system_component: str, spatial_resolution: str,
-                            type_of_result: str,model_name: str) -> Path:
+                            type_of_result: str,model_name: str,is_private: int) -> Path:
 
-        path_ = cls.simple_variable_path(id_str, system_component, spatial_resolution,model_name) / cls.convert_type_of_result(
+        path_ = cls.simple_variable_path(id_str, system_component, spatial_resolution,model_name,is_private) / cls.convert_type_of_result(
             type_of_result, to_directory_name=True)
         return path_
 
     @classmethod
     def result_to_view_path(cls, id_str: str, system_component: str, spatial_resolution: str,
-                            type_of_result: str, result_to_view: str, model_name: str) -> Path:
+                            type_of_result: str, result_to_view: str, model_name: str,is_private: int) -> Path:
 
-        path_ = cls.type_of_result_path(id_str, system_component, spatial_resolution, type_of_result,model_name) \
+        path_ = cls.type_of_result_path(id_str, system_component, spatial_resolution, type_of_result,model_name,is_private) \
                 / cls.convert_result_to_view(result_to_view, id_str, system_component, spatial_resolution,
-                                             type_of_result,model_name, to_directory_name=True)
+                                             type_of_result,model_name,is_private, to_directory_name=True)
         return path_

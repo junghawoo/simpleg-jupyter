@@ -23,34 +23,36 @@ class ExperimentManager:
     jobid = None
 
     @classmethod
-    def working_directory(cls, id_str: str) -> Path:
+    def working_directory(cls, id_str: str,is_private: int) -> Path:
         from .simpleutil import SIMPLEUtil
         id_ = str(Experiment.to_id(id_str))
-        if Experiment.is_private_id_str(id_str):
+        if is_private == 1:
             return SIMPLEUtil.PRIVATE_JOBS_DIR / id_
         else:
             return SIMPLEUtil.SHARED_JOBS_SYM_LINK / id_
 
     @classmethod
-    def outputs_directory(cls, id_str: str) -> Path:
-        return cls.working_directory(id_str) / "outputs"
+    def outputs_directory(cls, id_str: str,is_private: int) -> Path:
+        return cls.working_directory(id_str,is_private) / "outputs"
 
     @classmethod
-    def results_directory(cls, id_str: str) -> Path:
-        return cls.outputs_directory(id_str) / "results"
+    def results_directory(cls, id_str: str,is_private: int) -> Path:
+        return cls.outputs_directory(id_str,is_private) / "results"
 
     @classmethod
-    def supplementary_directory(cls, id_str: str) -> Path:
-        return cls.working_directory(id_str) / "supp"
+    def supplementary_directory(cls, id_str: str,is_private: int) -> Path:
+        return cls.working_directory(id_str,is_private) / "supp"
 
     @classmethod
-    def _initialize_working_directory(cls, id_str) -> bool:
+    def _initialize_working_directory(cls, id_str,is_private) -> bool:
         #  Create working, output, and supp directory. If already existed, re-initialize it
-        work_dir = cls.working_directory(id_str)
-        outputs_dir = cls.outputs_directory(id_str)
-        supp_dir = cls.supplementary_directory(id_str)
-        if work_dir.exists():
-            shutil.rmtree(str(work_dir))
+        work_dir = cls.working_directory(id_str,is_private)
+        outputs_dir = cls.outputs_directory(id_str,is_private)
+        supp_dir = cls.supplementary_directory(id_str,is_private)
+        #if work_dir.exists():
+        #    shutil.rmtree(str(work_dir))
+        if work_dir.exists:
+            return True
         work_dir.mkdir(parents=True)
         outputs_dir.mkdir(parents=True)
         supp_dir.mkdir(parents=True)

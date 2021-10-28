@@ -94,7 +94,8 @@ class CustomMap(Map):
 
         self._raster_service = RasterService(raster_path)
         if self._gdal_layer:
-            self.substitute_layer(self._gdal_layer, layer)
+            #self.substitute_layer(self._gdal_layer, layer)
+            comment = "Test"
         else:
             self.add_layer(layer)
         self._gdal_layer = layer

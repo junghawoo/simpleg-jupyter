@@ -49,6 +49,12 @@ class RasterLayerUtil:
         self._remove_temp_files()  # Remove existing temp files, if exist
 
     def _get_temp_working_directory(self) -> Path:
+        if self.variable_model.is_private == 0:
+            id_str = self.variable_model.id_str
+            users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool"
+            os.makedirs(users_tooldirectory+"/"+id_str, exist_ok=True)
+            return Path(users_tooldirectory+"/"+id_str)     
+                
         if self.variable_model.is_filtered():
             parent_file_path = str(self.variable_model.file_path().parent)
             id_str = self.variable_model.id_str
@@ -235,8 +241,15 @@ class VectorLayerUtil:
         shp_file = gpd.read_file(self.variable_model.file_path())
         self.map_df=shp_file.to_crs(4326)
         #csv_data = pd.read_csv(str(self.variable_model.file_path())[:-3]+"csv")
-        #Temporary File to store GeoJSON version of data
-        temp_file = str(self.variable_model.file_path().parent) + ".geojson"
+
+        if self.variable_model.is_private == 0:
+            id_str = self.variable_model.id_str
+            users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool"
+            os.makedirs(users_tooldirectory+"/"+id_str, exist_ok=True)
+            temp_file =  users_tooldirectory + "/temp.geojson"
+        else:
+            #Temporary File to store GeoJSON version of data
+            temp_file = str(self.variable_model.file_path().parent) + ".geojson"
         self.map_df.to_file(temp_file, driver='GeoJSON')
         #Using the GeoJSON version of the file to process the data
         with open(temp_file, 'r') as f:
