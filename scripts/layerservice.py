@@ -51,14 +51,14 @@ class RasterLayerUtil:
     def _get_temp_working_directory(self) -> Path:
         if self.variable_model.is_private == 0:
             id_str = self.variable_model.id_str
-            users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool"
+            users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/shared_jobs"
             os.makedirs(users_tooldirectory+"/"+id_str, exist_ok=True)
             return Path(users_tooldirectory+"/"+id_str)     
                 
         if self.variable_model.is_filtered():
             parent_file_path = str(self.variable_model.file_path().parent)
             id_str = self.variable_model.id_str
-            file_path_root = str(ExperimentManager.results_directory(id_str))
+            file_path_root = str(ExperimentManager.results_directory(id_str,self.variable_model.is_private))
             suffix = parent_file_path.split(file_path_root)[1].replace("\\", "/")
             suffix = suffix[1:] if (suffix[0] == "/") else suffix
             temp_working_directory = SIMPLEUtil.TEMP_DIR / self.variable_model.id_str / suffix

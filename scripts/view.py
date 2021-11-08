@@ -9,6 +9,7 @@ import os
 from scripts.layerservice import RasterLayerUtil
 from model.variableutil import VariableModel
 from scripts.DBManager import *
+import base64
 
 def section(title, contents):
     """Create a collapsible widget container"""
@@ -57,6 +58,7 @@ class View:
         self.debug_output = None
         self.display_object = None
         self.job_selection = []
+       
         
         #Create Tab
         self.model_dd = None
@@ -65,6 +67,7 @@ class View:
         self.description_ta = None
         self.upload_text = None
         self.upload_btn = None
+        self.instructions_label_create = None
         
         # Manage Tab
         self.instructions_label = None
@@ -90,6 +93,8 @@ class View:
         self.shared_selectable_window_vbox = None
         self.longname = None
         #About Tab
+        self.allcrops_download = None
+        self.cornsoy_download = None
         #################################
 
     def intro(self, model, ctrl):
@@ -122,7 +127,7 @@ class View:
             self.tabs.set_title(i, self.TAB_TITLES[i])
 
         # Build content (widgets) for each tab
-        tab_content = [self.createTab(), self.manageTab(), self.viewTab(), self.testwidget()]
+        tab_content = [self.createTab(), self.manageTab(), self.viewTab(), self.aboutTab()]
 
         # Fill with content
         self.tabs.children = tuple(tab_content)
@@ -136,7 +141,9 @@ class View:
         return ui.VBox(content)
     
     def createTab(self):
+        
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
+        self.instructions_label_create=ui.Label(value="Instructions: Upload the .cmf files here. Upload only one file. Look at the About Tab for cmf templates.")
         #Dropdown for the model Selction
         self.model_dd=ui.Dropdown(options=self.MODEL_DROPDOWN_CREATETAB,value='-',description='Model:',disabled=False)  
         #Name text Box
@@ -156,7 +163,7 @@ class View:
         self.submit_button.style.button_color = 'gray'
         #submit_button.layout = ui.Layout(width="50%")
         #Creating a VBox with the individual widgets
-        createTab_widgets = ui.VBox(children=[self.model_dd,self.name_tb,self.description_ta,self.upload_row,self.submit_button],layout=box_layout)
+        createTab_widgets = ui.VBox(children=[self.instructions_label_create,self.model_dd,self.name_tb,self.description_ta,self.upload_row,self.submit_button],layout=box_layout)
         #createTab_widgets.align_items = 'center'
         content = [section("New Experiment",[ui.VBox(children=[createTab_widgets])])]
         
@@ -313,4 +320,48 @@ class View:
         self.view_vbox = ui.VBox(children=[content])
         return self.view_vbox
     
-   
+    def download_button(self,buffer, filename: str, button_description: str):
+
+        """Loads data from buffer into base64 payload embedded into a HTML button. Recommended for small files only.
+
+        buffer: open file object ready for reading.
+            A file like object with a read method.
+        filename:    str
+            The name when it is downloaded.
+        button_description: str
+            The text that goes into the button.
+
+        """
+
+        payload = base64.b64encode(buffer).decode()
+
+        html_button = f"""<html>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        </head>
+        <body>
+        <a download="{filename}" href="data:text/csv;base64,{payload}" >
+        <button class="p-Widget jupyter-widgets jupyter-button widget-button mod-warning" style="width:auto">{button_description}</button>
+        </a>
+        </body>
+        </html>
+        """
+        return ui.HTML(html_button)
+
+    def aboutTab(self): 
+        #Download Button for Custom CornSoy
+        with open('SIMPLE_G_CornSoy.cmf', 'r') as f:
+            file_content = f.read()
+    
+        f = file_content
+        self.cornsoy_download = self.download_button(bytes(f,"utf-8"), 'SIMPLE_G_CornSoy.cmf','SIMPLE_G_CornSoy Template')
+    
+        with open('SIMPLE_G_AllCrops.cmf', 'r') as f:
+            file_content = f.read()
+    
+        f = file_content 
+        self.allcrops_download = self.download_button(bytes(f,"utf-8"), 'SIMPLE_G_AllCrops.cmf','SIMPLE_G_AllCrops Template')
+    
+        content = [section("Downloads",[ui.VBox(children=[self.allcrops_download,self.cornsoy_download])])]
+        return ui.VBox(content)
+    

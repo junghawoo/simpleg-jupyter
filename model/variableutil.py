@@ -281,7 +281,9 @@ class VariableService:
     def simple_variable(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str,is_private: int) -> str:
         spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
         directories = listdir(str(spatial_resolution_path))
-        simple_variable = directories[0]
+        simple_variable = ""
+        # print(system_component)
+        #print(model_name)
         if(spatial_resolution =="Regional"):
             if(system_component=="Land"):
                 if(model_name=="Land Use Region Type"):
@@ -302,6 +304,19 @@ class VariableService:
                     simple_variable = "p_QCRPTRADEr"
                 if(model_name=="Output Region"):
                     simple_variable = "p_QCROPr"
+           
+        if(model_name=="N use Grid" and system_component=="Environment"):
+                simple_variable = "p_QNLEACHha_gl"
+        if(model_name=="N Leach Int - Grid" and system_component=="Environment"):
+                simple_variable = "p_LEACHINTgl"
+        if(model_name=="Price of N - Grid" and system_component=="Environment"):
+                simple_variable = "p_PNITROgl"
+        if(model_name=="Output - Grid" and system_component=="Prodcution"):
+                simple_variable = "p_QCROPgl"
+        if(model_name=="Output - Region" and system_component=="Production"):
+                simple_variable = "p_QCROPr"
+        if(simple_variable == ""):
+            simple_variable = directories[0]
         return simple_variable
 
     @classmethod
