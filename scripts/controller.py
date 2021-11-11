@@ -222,12 +222,16 @@ class Controller(logging.Handler):
         for jobid,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
                 self.view.job_selection.append([jobid,0])
-                if(self.view.shared_selectable_window[row_counter,2].value == "Custom Crops"):
+                if(self.view.shared_selectable_window[row_counter,2].value == "AllCrops"):
                     self.model_type.append(0)
                 else:
                     self.model_type.append(1)
             row_counter +=1
-        self.model_type = self.model_type[0]
+        #print(self.model_type)
+        temp = self.model_type[0]
+        self.model_type = temp
+        #print(self.model_type)        
+
         return
     
     
@@ -608,6 +612,7 @@ class Controller(logging.Handler):
         content = self.view.view_vbox.children[0]
         self.view.view_vbox.children = tuple([content])
         self.jobs_selected("Garbage Value")
+        self.view_layer_options("Garbage")
         if(len(self.view.job_selection)!=2):
             self.view.instructions_label.value = "Select exactly 2 models to compare"
         else:
