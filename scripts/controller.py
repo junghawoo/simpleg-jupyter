@@ -207,15 +207,17 @@ class Controller(logging.Handler):
         row_counter = 0
         self.model_type = []
         for jobid,checkbox in self.view.checkboxes.items():
-            
+            #print(self.view.selectable_window[row_counter,2].value + " all")
             if(checkbox.value == True):
                 self.view.job_selection.append([jobid,1])
                 #print(self.view.selectable_window)
+                #print(self.view.selectable_window[row_counter,2].value + " selected")
                 if(self.view.selectable_window[row_counter,2].value == "Custom Crops"):
                     self.model_type.append(0)
                 else:
                     self.model_type.append(1)
-                row_counter +=1
+                #print(self.model_type[-1])
+            row_counter +=1
         row_counter = 0
         for jobid,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
@@ -224,7 +226,7 @@ class Controller(logging.Handler):
                     self.model_type.append(0)
                 else:
                     self.model_type.append(1)
-                row_counter +=1
+            row_counter +=1
         self.model_type = self.model_type[0]
         return
     
@@ -378,6 +380,11 @@ class Controller(logging.Handler):
                     variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
                     map_wid = mapbox.children[0]
                     map_wid_1 =mapbox.children[1]
+                    if len(map_wid.layers) == 2: 
+                        map_wid.remove_layer(map_wid.layers[1])
+                    if len(map_wid_1.layers) == 2:
+                        map_wid_1.remove_layer(map_wid_1.layers[1])
+                    break
                     if variable_model.is_raster():
                         layer_util = RasterLayerUtil(variable_model)
                         layer = layer_util.create_layer()
@@ -398,13 +405,9 @@ class Controller(logging.Handler):
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
                         
-                    if len(map_wid.layers) > 2: 
-                        map_wid.remove_layer(map_wid.layers[1])
-                    if len(map_wid_1.layers) > 2:
-                        map_wid_1.remove_layer(map_wid_1.layers[1])
-                    break
+
                     
-                except:
+                except Exception as e:
                     self.view.longname.value = "This Comparison is not possible"
             #Below is single map processing
             try:
@@ -413,6 +416,9 @@ class Controller(logging.Handler):
                 variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
 
                 map_wid = mapbox.children[0].children[0]
+                if len(map_wid.layers) == 2:
+                    #print("Deleting Layers")
+                    map_wid.remove_layer(map_wid.layers[1]) 
                 if variable_model.is_raster():
                     layer_util = RasterLayerUtil(variable_model)
                     layer = layer_util.create_layer()
@@ -421,11 +427,10 @@ class Controller(logging.Handler):
                     layer_util = VectorLayerUtil(variable_model)
                     layer = layer_util.create_layer()
                     map_wid.add_layer(layer)
-                    layer_util.create_legend(map_wid)
-                if len(map_wid.layers) > 2:
-                    map_wid.remove_layer(map_wid.layers[1])            
+                    layer_util.create_legend(map_wid)           
                 break
-            except:
+            except Exception as e:
+                print(e)
                 self.view.longname.value = "This file does not exist"
         return
     

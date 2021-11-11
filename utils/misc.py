@@ -17,7 +17,7 @@ GREEN = "#35B535"
 DANGER_COLOR = "#f44336"
 
 NODATA = -999999999  # Nodata value for processed raster file.
-REBUILD_RASTER_TILE = False  # Existing tile folder will be deleted upon visualization if this value is set to yes.
+REBUILD_RASTER_TILE = True  # Existing tile folder will be deleted upon visualization if this value is set to yes.
 
 
 def top_level_directory() -> Path:

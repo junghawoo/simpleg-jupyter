@@ -79,10 +79,7 @@ class CustomMap(Map):
 
     def visualize_vector(self, layer: TileLayer):
         # TODO: Implement this
-        if self._gdal_layer:
-            self.substitute_layer(self._gdal_layer, layer)
-        else:
-            self.add_layer(layer)
+        self.add_layer(layer)
         self._gdal_layer = layer
         self._raster_service = None
         self._legend_bar.refresh(None, None)
@@ -92,14 +89,18 @@ class CustomMap(Map):
     def visualize_raster(self, layer: TileLayer, raster_path: Path):
         """ The raster path should have been processed and filtered, if needed. """
 
-        self._raster_service = RasterService(raster_path)
-        if self._gdal_layer:
-            #self.substitute_layer(self._gdal_layer, layer)
-            comment = "Test"
-        else:
-            self.add_layer(layer)
+        #self._raster_service = RasterService(raster_path)
+        gtif = gdal.Open(str(raster_path))
+        srcband = gtif.GetRasterBand(1)
+
+        # Get raster statistics
+        stats = srcband.GetStatistics(True, True)
+        gtif = None
+        self.add_layer(layer)
         self._gdal_layer = layer
-        self._legend_bar.refresh(self._raster_service.min_value, self._raster_service.max_value)
+        #print(stats[0],stats[1])
+        #print(raster_path)
+        self._legend_bar.refresh(stats[0], stats[1])
         self.center = (39.5, -98.35)
         self.zoom = 4
 
@@ -207,7 +208,7 @@ class LegendBar(VBox):
         }
         return style_
 
-    def refresh(self, min_: Optional[float], max_: Optional[float]):
+    def refresh(self, min_, max_):
         if (min_ is None) or (max_ is None):
             # Possible when every value in raster is nodata(?)
             self.style_ = self._create_style(hidden=True)
@@ -217,9 +218,9 @@ class LegendBar(VBox):
             bucket = self._create_bucket(min_, self.colors[-1])
             buckets.append(bucket)
         else:
-            increment = float(max_ - min_) / len(self.colors)
+            increment = (max_ - min_) / len(self.colors)
             for i in range(0, len(self.colors)):
-                current_value = min_ + i * increment
+                current_value = min_ + (i * increment)
                 bucket = self._create_bucket(current_value, self.colors[i])
                 buckets.append(bucket)
         buckets.reverse()
@@ -227,10 +228,8 @@ class LegendBar(VBox):
         self.style_ = self._create_style(bucket_number=len(buckets), hidden=False)
 
     def _create_bucket(self, value: float, color: str):
-        if value > 1000 or value < -1000:
-            value_str = "{:.2e}".format(value)
-        else:
-            value_str = "{:.2f}".format(value)
+
+        value_str = "{:.2f}".format(value)
         legend_layout = Layout(
                                width= "auto",
                                height= "auto",

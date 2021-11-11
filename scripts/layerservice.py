@@ -37,7 +37,7 @@ class RasterLayerUtil:
         assert variable_model.is_raster()
 
         self.variable_model: VariableModel = variable_model
-
+        #Delete the temporary files to make sure that if GDAL crashed then it would recreate the files
         # Temporary files
         self._tif_basename = self.variable_model.file_path().stem
         self._temp_working_directory = self._get_temp_working_directory()
@@ -46,6 +46,7 @@ class RasterLayerUtil:
         self._color_file_path = self._temp_working_directory / (self._tif_basename + "_temp_color.txt")
         self._filtered_tif_path = self._temp_working_directory / (self._tif_basename + "_temp_filter.tiff")
         self._colorized_tif_path = self._temp_working_directory / (self._tif_basename + "_temp_color.tiff")
+        self.remove_old_temp_files()
         self._remove_temp_files()  # Remove existing temp files, if exist
 
     def _get_temp_working_directory(self) -> Path:
@@ -54,17 +55,8 @@ class RasterLayerUtil:
             users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/shared_jobs"
             os.makedirs(users_tooldirectory+"/"+id_str, exist_ok=True)
             return Path(users_tooldirectory+"/"+id_str)     
-                
-        if self.variable_model.is_filtered():
-            parent_file_path = str(self.variable_model.file_path().parent)
-            id_str = self.variable_model.id_str
-            file_path_root = str(ExperimentManager.results_directory(id_str,self.variable_model.is_private))
-            suffix = parent_file_path.split(file_path_root)[1].replace("\\", "/")
-            suffix = suffix[1:] if (suffix[0] == "/") else suffix
-            temp_working_directory = SIMPLEUtil.TEMP_DIR / self.variable_model.id_str / suffix
-            temp_working_directory.mkdir(parents=True, exist_ok=True)
-        else:
-            temp_working_directory = self.variable_model.file_path().parent
+            
+        temp_working_directory = self.variable_model.file_path().parent
         return temp_working_directory
 
     @property
@@ -74,14 +66,7 @@ class RasterLayerUtil:
 
         filter_min = self.variable_model.filter_min
         filter_max = self.variable_model.filter_max
-        if not self.variable_model.is_filtered():  # data is not filtered
-            path = self._temp_working_directory / self._tif_basename
-        else:
-            min_value, max_value = self._min_max_of_raster(self.processed_raster_path)
-            min_value = min_value if min_value is not None else "nodata"
-            max_value = max_value if max_value is not None else "nodata"
-            path = self._temp_working_directory / (self._tif_basename + "_{}_{}".format(min_value,
-                                                                                        max_value))
+        path = self._temp_working_directory / self._tif_basename
         return path
 
     @property
@@ -96,7 +81,7 @@ class RasterLayerUtil:
 
     def create_layer(self) -> TileLayer:
         if self._process_raster() and self._colorize_raster() and self._tile_raster():
-            self._remove_temp_files()
+            #self._remove_temp_files()
             return TileLayer(url=self._tile_folder_url, opacity=0.7, name=self._tif_basename)
         else:
             print("Failed to create layer")
@@ -121,14 +106,16 @@ class RasterLayerUtil:
 
     def _filter_raster(self) -> bool:
         min_, max_ = self._min_max_of_raster(self._warped_tif_path)
+        #print(self._warped_tif_path)
         if (min_ is None) or (max_ is None):  # All nodata
             print("filtering failed")
             return False
         range_ = max_ - min_
-        new_min = min_ + self.variable_model.filter_min / float(100) * range_
-        new_max = min_ + self.variable_model.filter_max / float(100) * range_
+        new_min = min_ + ((self.variable_model.filter_min / float(100)) * float(range_))
+        new_max = min_ + ((self.variable_model.filter_max / float(100)) * float(range_))
 
         # How to use - https://gdal.org/programs/gdal_calc.html
+        #print(new_min,new_max)
         filter_expression = "A*logical_and(A>={},A<={})".format(new_min, new_max)
         args = ["--outfile={}".format(str(self._filtered_tif_path)),
                 "-A", str(self._warped_tif_path),
@@ -147,24 +134,24 @@ class RasterLayerUtil:
         print("filtering succeeded")
         return True
 
-    def _min_max_of_raster(self, tif_path: Path) -> Tuple[Optional[float], Optional[float]]:
-        gdal_edit.gdal_edit(["argv_placeholder", "-unsetstats", str(tif_path)])
+    def _min_max_of_raster(self, tif_path: Path):
+        #gdal_edit.gdal_edit(["argv_placeholder", "-unsetstats", str(tif_path)])
+        #print("Min Max Path")
+        #print(tif_path)
         # open the image
-        raster = gdal.Open(str(tif_path))
-        assert raster is not None
+        gtif = gdal.Open(str(tif_path))
+        srcband = gtif.GetRasterBand(1)
+        assert gtif is not None
 
-        # read in the crop data and get info about it
-        band = raster.GetRasterBand(1)
         try:
-            stats = band.GetStatistics(False, True)
-            min_: float = float(stats[0])
-            max_: float = float(stats[1])
+            # Get raster statistics
+            stats = srcband.GetStatistics(True, True)
         except:
             # All values are nodata
             return None, None
 
-        raster = None  # Close the dataset -https://gdal.org/tutorials/raster_api_tut.html
-        return min_, max_
+        gtif = None  # Close the dataset -https://gdal.org/tutorials/raster_api_tut.html
+        return stats[0],stats[1]
 
     def _colorize_raster(self) -> bool:
         if self._create_color_file():
@@ -207,14 +194,20 @@ class RasterLayerUtil:
         from utils.misc import REBUILD_RASTER_TILE
         if self._tile_folder_path.exists() and self._tile_folder_path.is_dir() and REBUILD_RASTER_TILE:
             shutil.rmtree(str(self._tile_folder_path))
+        #print(self.processed_raster_path)
         print("min, max", self._min_max_of_raster(self.processed_raster_path))
         print("tile folder", self._tile_folder_path)
         # if self.variable_model.is_filtered() and self._tile_folder_path.exists():
         #     shutil.rmtree(str(self._tile_folder_path))
-
-        # 0 - 8 is the number of zoom level
-        gdal2tiles.run(["-e", "-q", "-z", "0-8", "-a", "0, 0, 0", "--processes={}".format(cpu_count()),
-                        str(self._colorized_tif_path), str(self._tile_folder_path)])
+        #print(cpu_count())
+        #print(str(self._colorized_tif_path))
+        #print(str(self._tile_folder_path))
+        
+        # Using 2 cpu cores instead of all to prevent gdal from crashing
+        # It will take longer but more reliable
+        # Removed the -e to make sure new temp files and processing is done again
+        #print(str(self._colorized_tif_path))
+        gdal2tiles.run(["-z", "0-8", "-a", "0, 0, 0", "--processes=2", str(self._colorized_tif_path), str(self._tile_folder_path)])
         return True
 
     def _remove_temp_files(self) -> bool:
@@ -228,7 +221,32 @@ class RasterLayerUtil:
             self._color_file_path.unlink()
         return True
 
-
+    def remove_old_temp_files(self):
+        #try:
+        #    print(self._temp_working_directory)
+        #    shutil.rmtree(self._temp_working_directory)
+        #except:
+        #        comment = "do nothing"
+        try:
+            if os.path.exists(self.processed_raster_path):
+                #print(self.processed_raster_path)
+                os.remove(self.processed_raster_path)
+            if os.path.exists(self._warped_tif_path):
+                #print(self._warped_tif_path)
+                os.remove(self._warped_tif_path)
+            if os.path.exists(self._color_file_path):
+                #-print(self._color_file_path)
+                os.remove(self._color_file_path)
+            if os.path.exists( self._filtered_tif_path):
+                #print(self._filtered_tif_path)
+                os.remove( self._filtered_tif_path)
+            if os.path.exists( self._colorized_tif_path):
+                #print(self._colorized_tif_path)
+                os.remove( self._colorized_tif_path)                
+        except:
+               comment = "Do nothing"
+        
+    
 class VectorLayerUtil:
     def __init__(self, variable_model: VariableModel):
         print(variable_model.file_path())
@@ -292,3 +310,4 @@ class VectorLayerUtil:
         else:
                 map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA'])/0.9)
         return
+    
