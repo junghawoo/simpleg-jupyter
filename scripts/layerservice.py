@@ -111,9 +111,8 @@ class RasterLayerUtil:
             print("filtering failed")
             return False
         range_ = max_ - min_
-        new_min = min_ + ((self.variable_model.filter_min / float(100)) * float(range_))
-        new_max = min_ + ((self.variable_model.filter_max / float(100)) * float(range_))
-
+        new_min = min_ + self.variable_model.filter_min / float(100) * float(range_)
+        new_max = min_ + self.variable_model.filter_max / float(100) * float(range_)
         # How to use - https://gdal.org/programs/gdal_calc.html
         #print(new_min,new_max)
         filter_expression = "A*logical_and(A>={},A<={})".format(new_min, new_max)
@@ -242,9 +241,15 @@ class RasterLayerUtil:
                 os.remove( self._filtered_tif_path)
             if os.path.exists( self._colorized_tif_path):
                 #print(self._colorized_tif_path)
-                os.remove( self._colorized_tif_path)                
-        except:
-               comment = "Do nothing"
+                os.remove( self._colorized_tif_path)
+            if os.path.exists(str(self._warped_tif_path)+".aux.xml"):
+                os.remove( str(self._warped_tif_path)+".aux.xml")
+            if os.path.exists(str(self.processed_raster_path)+".aux.xml"):
+                os.remove( str(self.processed_raster_path)+".aux.xml")
+            shutil.rmtree(self._temp_working_directory/self._tif_basename)
+        except Exception as e:
+               print(e)
+               
         
     
 class VectorLayerUtil:
@@ -277,30 +282,23 @@ class VectorLayerUtil:
                d["REG"] = d["properties"]["REG"]
 
             #print(geo_json_data)
-            #Taking out Region Vs Value dictionary to map out a color scheme based on number values
-            mapping  = dict(zip(self.map_df["REG"].str.strip(), self.map_df["DATA"]))
-            #Creating the color scheme to match the legend
-            linear = cm.LinearColormap([(255,0,0),(255,51,0),(255,119,0),(255,187,0),(255,255,0),(204,255,0),(153,255,0),(102,255,0),(38,191,0),(0,102,0)],
+        #Taking out Region Vs Value dictionary to map out a color scheme based on number values
+        mapping  = dict(zip(self.map_df["REG"].str.strip(), self.map_df["DATA"]))
+        #Creating the color scheme to match the legend
+        linear = cm.LinearColormap([(255,0,0),(255,51,0),(255,119,0),(255,187,0),(255,255,0),(204,255,0),(153,255,0),(102,255,0),(38,191,0),(0,102,0)],
                  vmin=min(self.map_df['DATA']), vmax=max(self.map_df['DATA']))
-            #display(linear) #Display the color scheme
-            #print(map_df)
-            #print(list(mapping.items())[:10])
-            #print(geo_json_data['features'][0])
-            #The Choropleth widget is used to add color to the regions
-            if(min(self.map_df['DATA']) == max(self.map_df['DATA'])):
-                layer = GeoData(geo_dataframe=self.map_df,style = {'color':'black','fillColor':'rgb(0,102,0)','fillOpacity':0.7})
-            else:
-                layer = Choropleth(
+        #display(linear) #Display the color scheme
+        #The Choropleth widget is used to add color to the regions
+        if(min(self.map_df['DATA']) == max(self.map_df['DATA'])):
+             layer = GeoData(geo_dataframe=self.map_df,style = {'color':'black','fillColor':'rgb(0,102,0)','fillOpacity':0.7})
+        else:
+             layer = Choropleth(
                     geo_data=geo_json_data,
                     choro_data=mapping,
                     colormap=linear,
                     style={'fillOpacity': 0.7, "color":"black"},
                     key_on="REG"
                     )
-            #print(layer.colormap)
-            #map_wid.add_layer(layer)
-            #map_wid._legend_bar.refresh(min(map_df['DATA']), max(map_df['DATA'])/0.9)
-            #print(mapping)
         return layer
     
     def create_legend(self,map_wid):

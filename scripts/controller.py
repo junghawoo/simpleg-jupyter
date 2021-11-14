@@ -377,18 +377,23 @@ class Controller(logging.Handler):
             #Checking to see whether the Accordian has a single map or multiple maps
             if(len(self.view.view_vbox.children[i].children[0].children)>1):
                 try:  
+                    #print("Compare")
                     mapbox = self.view.view_vbox.children[i].children[0]
                     map_id = self.view.job_selection[0][0]
                     map_id_1 = self.view.job_selection[1][0]
+                    
                     variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
+                    
                     variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
+                    
                     map_wid = mapbox.children[0]
                     map_wid_1 =mapbox.children[1]
                     if len(map_wid.layers) == 2: 
                         map_wid.remove_layer(map_wid.layers[1])
                     if len(map_wid_1.layers) == 2:
                         map_wid_1.remove_layer(map_wid_1.layers[1])
-                    break
+                    #break
+                    
                     if variable_model.is_raster():
                         layer_util = RasterLayerUtil(variable_model)
                         layer = layer_util.create_layer()
@@ -408,17 +413,20 @@ class Controller(logging.Handler):
                         layer = layer_util.create_layer()
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
-                        
+                      
 
-                    
+                    break     
                 except Exception as e:
+                    #print(e)
                     self.view.longname.value = "This Comparison is not possible"
+                    break
             #Below is single map processing
             try:
                 mapbox = self.view.view_vbox.children[i]
                 map_id = self.view.job_selection[0][0]
                 variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
-
+                mapbox.children[0].children[0].close()
+                mapbox.children[0].children = [CustomMap("1200px","720px")]
                 map_wid = mapbox.children[0].children[0]
                 if len(map_wid.layers) == 2:
                     #print("Deleting Layers")
