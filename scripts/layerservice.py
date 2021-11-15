@@ -263,8 +263,16 @@ class VectorLayerUtil:
     def create_layer(self):
         shp_file = gpd.read_file(self.variable_model.file_path())
         self.map_df=shp_file.to_crs(4326)
+        #print(self.map_df)
         #csv_data = pd.read_csv(str(self.variable_model.file_path())[:-3]+"csv")
-
+        min_df = min(self.map_df['DATA'])
+        max_df = max(self.map_df['DATA'])
+        range_= max_df - min_df
+        min_ = min_df + ((float(self.variable_model.filter_min)/ float(100)) * range_)
+        max_ = min_df + ((float(self.variable_model.filter_max)/ float(100)) * range_)
+        self.map_df = self.map_df[self.map_df['DATA'] >= min_]
+        self.map_df = self.map_df[self.map_df['DATA'] <= max_]
+        #print(self.map_df)
         if self.variable_model.is_private == 0:
             id_str = self.variable_model.id_str
             users_tooldirectory = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool"
@@ -281,7 +289,7 @@ class VectorLayerUtil:
             for d in geo_json_data["features"]:
                d["REG"] = d["properties"]["REG"]
 
-            #print(geo_json_data)
+        #print(geo_json_data)
         #Taking out Region Vs Value dictionary to map out a color scheme based on number values
         mapping  = dict(zip(self.map_df["REG"].str.strip(), self.map_df["DATA"]))
         #Creating the color scheme to match the legend
@@ -306,6 +314,6 @@ class VectorLayerUtil:
         if(min(self.map_df['DATA']) == max(self.map_df['DATA'])):
                 map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA'])) 
         else:
-                map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA'])/0.9)
+                map_wid._legend_bar.refresh(min(self.map_df['DATA']), max(self.map_df['DATA']))
         return
     
