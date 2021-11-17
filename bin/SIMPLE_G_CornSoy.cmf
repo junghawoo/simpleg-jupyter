@@ -1,0 +1,91 @@
+!============================================================================!
+!  SIMPLE-G_US - CORN-SOY VERSION - Command file                             !
+!          a Simplified International Model of agricultural Prices,          !
+!          Land use and the Environment -                                    !
+!          Version | Gridded Continental U.S. | Corn-Equivalent Crop         !
+!          Global to Local Analysis of Systems Sustainability                !
+!          Purdue University, IN, USA                                        !
+!============================================================================!
+
+! This command file runs the experiments for SIMPLE-G. It tells the model where
+! find the input files, where to save output files, solution parameters. It also
+! Summarizes the closure file <which variables are determined by the program
+! (endogenous) or dicatated by the user via shock inputs (exogenous) >
+
+! ***** PLEASE ONLY MAKE CHANGES ON THE CLOSURE AND SHOCK SECTION ***** !
+
+! Input files
+! -------------------
+ File GRIDSETS = <dataPath>/GRIDSETS.har ; !  set file (see in folder)
+ File GRIDDATA = <dataPath>/GRIDDATA.har ; !  base data
+ File GRIDPARM = <dataPath>/GRIDPARM.har ; !  parameter data
+!
+! Output files
+! ------------
+LOG file = <outputPath>/Experiment1.LOG; ! log file which contains solution reporting
+Solution file = <outputPath>/Experiment1; ! solution file which contains results of simulation
+Updated file GRIDDATA = <outputPath>/Experiment1.upd ; ! updated base data after simulation !
+
+! Solution method
+! ------------
+Verbal Description = POP21;
+Method = Gragg;
+Steps = 2 4 6;
+subintervals = 3;
+
+! *************** !
+! Closure Section !
+! *************** !
+! Assigns which variables are determined by the program (endogenous)
+!             or dicatated by the user via shock inputs (exogenous)
+! ------------
+!                   KEY EXOGENOUS VARIABLES
+Exogenous  p_INC_PC   ;!per capita income by inc. reg.
+ Exogenous  p_POP      ;!population by inc. reg.
+ Exogenous  p_QCRPBIOF ;!crop demand for global biofuel use
+
+ Exogenous  p_P(NFOOD_COMM,REG) ;!price of non-food commodities by inc. reg.
+ Exogenous  p_PNCRPFEED ;!price of non-feed inputs used in livestock prod.
+ Exogenous  p_PNCRPFOOD ;!price of non-crop inputs used in proc. food prod.
+ 
+ !                   INPUT EFFICIENCY VARIABLES (also exogenous)
+ !                      Crop Sector
+ Exogenous  p_AFNITROgg    ;!nitrogen eff. index in crop prod. by reg
+ Exogenous  p_AFAUGLANDrl  ;!augmented land eff. index in crop prod. by reg & ltype
+ Exogenous  p_AFAUGLANDrr  ;!augmented land eff. index in crop prod. by reg
+ Exogenous  p_AOCROPrl     ;!input-neutral eff. index in crop prod. by reg & ltype
+ Exogenous  p_AOCROPrr     ;!input-neutral eff. index in crop prod. by reg
+ 
+ !                      Livestock Sector
+ Exogenous  p_AOCRPFEED   ;!hicks-neutral eff. index in livestock prod.
+ Exogenous  p_AFCRPFEEDW  ;!sub-component of feed eff. index by inc. reg. (global)
+ Exogenous  p_AFCRPFEEDr  ;!sub-component of feed eff. index by inc. reg. (reg. specific)
+ Exogenous  p_AFNCRPFEEDW ;!sub-component of non-feed eff. index by inc. reg. (global)
+ Exogenous  p_AFNCRPFEEDr ;!sub-component of non-feed eff. index by inc. reg. (reg. specific)
+ 
+ !                      Processed Food Sector
+ Exogenous  p_AOCRPFOOD   ;!hicks-neutral eff. index in proc. food prod.
+ Exogenous  p_AFNCRPFOODW ;!sub-component of eff. index of non-crop inputs in proc. food prod. by inc. reg. (global)
+ Exogenous  p_AFCRPFOODW  ;!sub-component of eff. index of crops in proc. food prod. by inc. reg. (global)
+ Exogenous  p_AFCRPFOODr  ;!sub-component of eff. index of crops in proc. food prod. by inc. reg. (reg. specific)
+ Exogenous  p_AFNCRPFOODr ;!sub-component of eff. index of non-crop inputs in proc. food prod. by inc. reg. (reg. specific)
+
+ Exogenous  p_QNLEACHsft;! leaching shifter intially one and exogeneous
+ Exogenous  NLTAXr;   ! leaching shifter intially one and exogeneous 
+ Exogenous  s_QLANDg; ! slack variable to target cropland by grid
+ Exogenous  t_PCROPg; ! slack variable to target cropland by grid
+
+ REST Endogenous;
+
+! ************** !
+! Shocks Section !
+! ************** !
+
+Shock p_POP(REG) = uniform 21;
+ 
+!Shock p_POP = select from file "<baselineShocksPath>/Population/SSP2/SSP2.har" header "DATA"; 
+!Shock p_INC_PC = select from file "<baselineShocksPath>/Income/SSP2/SSP2.har" header "DATA"; 
+!Shock p_QCRPBIOFr = select from file "<baselineShocksPath>/Biofuels/Current/Current.har" header "DATA"; 
+!Shock p_AOCROPrr = select from file "<baselineShocksPath>/CropProductivity/High/High.har" header "DATA"; 
+!Shock p_TFP_LVSTOCK = select from file "<baselineShocksPath>/AnimalProductivity/High/High.har" header "DATA"; 
+!Shock s_QWATERg = select from file "<baselineShocksPath>/Water/NoShocks/NoShocks.har" header “DATA
