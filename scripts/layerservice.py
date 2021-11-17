@@ -270,8 +270,9 @@ class VectorLayerUtil:
         range_= max_df - min_df
         min_ = min_df + ((float(self.variable_model.filter_min)/ float(100)) * range_)
         max_ = min_df + ((float(self.variable_model.filter_max)/ float(100)) * range_)
-        self.map_df = self.map_df[self.map_df['DATA'] >= min_]
-        self.map_df = self.map_df[self.map_df['DATA'] <= max_]
+        #Not needed to filter by range
+        #self.map_df = self.map_df[self.map_df['DATA'] >= min_]
+        #self.map_df = self.map_df[self.map_df['DATA'] <= max_]
         #print(self.map_df)
         if self.variable_model.is_private == 0:
             id_str = self.variable_model.id_str
