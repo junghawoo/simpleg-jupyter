@@ -1,9 +1,0 @@
-variable,level,theme,units,shortname,longname
-p_PCROPr,Regional,Production,USD / MT,Regional Price,Corn Soy Supply Price by Region (in USD / MT)
-p_PCROP,Global,Production,USD / MT,World Price ,World Corn Soy Price(in USD / MT)
-p_QCRPTRADEr,Regional,Production,K MT,Net Export,Corn Soy Net Exports by Region (in 1000 MT Corn eq)
-p_QCROPr,Regional,Production,K MT,Output - Region,Corn Soy Output by Region (in 1000 MT Corn eq)
-p_QNLEACHha_gl,Geospatial,Environment,MT,N Use - Grid Type,"Nitrogen Leaching by Grid, Type (in kg per ha)"
-p_LEACHINTgl,Geospatial,Environment,MT / USD,N Leach Int - Grid Type ,"Nitrogen Leaching Intensity by Grid, Type (in MT per USD N use)"
-p_PNITROgl,Geospatial,Environment,MT,Price of N - Grid Type,"Price of Nitrogen by Grid, Type (in USD / MT)"
-p_QCROPgl,Geospatial,Production,K MT,Output - Grid Type,"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)"

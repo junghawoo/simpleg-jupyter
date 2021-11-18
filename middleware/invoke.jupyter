@@ -1,3 +1,0 @@
-#!/bin/sh
-
-/usr/bin/invoke_app "$@" -t simplegus -C "start_jupyter -A -T @tool bin/Simple-G.ipynb" -u anaconda-6

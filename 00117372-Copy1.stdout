@@ -1,3 +1,0 @@
-Usage: /home1/05519/glass/HUBapps/simpleus/r112/bin/runSIMPLE_US.sh stiType -cmf cmfFile [-cl qlandCustom] [-cn qnitroCustom] [-cw qwaterCustom] \
-                                                 [-bp popCustom] [-bi incomeCustom] [-bf biofuelCustom] \
-                                                 [-bc cropCustom] [-ba animalCustom]
