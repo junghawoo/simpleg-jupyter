@@ -80,6 +80,8 @@ class DBManager:
             if(int(row[1]) > job_id_new):
                 job_id_new = int(row[1])
         job_id_new += 1 
+        if remotejobid == "0":
+            job_id_new = 0
         #conn = self.conn
         conn = con.cursor()
         sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,remotejobid,description) values (?,?,?,?,?,?,?,?,?);'
