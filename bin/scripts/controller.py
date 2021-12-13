@@ -30,6 +30,7 @@ import json
 import branca.colormap as cm
 from pathlib import Path
 import subprocess
+import sys
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -184,9 +185,13 @@ class Controller(logging.Handler):
         submit = subprocess.run(["submit", "--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
         # Path needs to be outputs not out
         get_id = submit.stdout.decode("utf-8")
+        print("get_id:{}".format(get_id))
         start = get_id.find("run") + 4
         end = get_id.find(".\n")
         remote_job_id = get_id[start:end]
+        print("job_id {} remote_job_id:{}".format(job_id, remote_job_id))
+        sys.stdout.flush()
+        
         self.db_class_import.updateRemoteID(job_id,remote_job_id)
         self.db_class_import.updateJobStatus(job_id,"Pending")
         self.refresh_manage_jobs("None")
@@ -246,31 +251,52 @@ class Controller(logging.Handler):
         rows = cursor.fetchall()
         #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
-        #For alignment finding the max length of each column
-        col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
-        for row in rows:
-            str_row = "".join(str(word).ljust(col_width) for word in row)
-            list_of_jobs.append(str_row)
+        
+        
+        #check if job table is empty.
+        if len(rows) > 0 :
+            #For alignment finding the max length of each column
+            col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
+            for row in rows:
+                str_row = "".join(str(word).ljust(col_width) for word in row)
+                list_of_jobs.append(str_row)
+                
+                
         cursor.close()
         conn.close()
         
+        
+         
+        #prepare header table 
+        self.comparetab_header = ui.GridspecLayout(1,11,height="auto")
+        self.comparetab_header[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
+        self.comparetab_header[0,1] = ui.HTML(value = f"<b><font color='#1167b1'>Job ID</b>")
+        self.comparetab_header[0,2] = ui.HTML(value = f"<b><font color='#1167b1'>Model Type</b>" )
+        self.comparetab_header[0,3:5] = ui.HTML(value = f"<b><font color='#1167b1'>Job Name</b>" )
+        self.comparetab_header[0,5:10] = ui.HTML(value = f"<b><font color='#1167b1'>Description</b>")
+        self.comparetab_header[0,10] = ui.HTML(value = f"<b><font color='#1167b1'>Job Status</b>")
+        
+        
         #Selectable multiple widget / Checkboxes for each
         self.view.checkboxes = {}
-        self.view.selectable_window = ui.GridspecLayout(len(rows),11,height="auto")
+        # to make sure at least one row will be displayed even when there is no job 
+        mininum_rows_to_display = max(1, len(rows))
+        
+        self.view.selectable_window = ui.GridspecLayout(mininum_rows_to_display,11,height="auto")
         self.view.job_selection = []
         row_counter = 0
         #Create a new dictionary key value pair for each jobid and checkbox
         for row in rows:
-            self.view.checkboxes[str(row[0])]=ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
+            self.view.checkboxes[str(row_counter)]=ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
             self.view.selectable_window[row_counter,:1] = self.view.checkboxes[list(self.view.checkboxes.keys())[-1]]
             self.view.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
             self.view.selectable_window[row_counter,2] = ui.HTML(row[6])
             self.view.selectable_window[row_counter,3:5] = ui.HTML(row[5])
-            self.view.selectable_window[row_counter,5:10] = ui.HTML(row[8])
+            self.view.selectable_window[row_counter,5:10] = ui.HTML(row[7])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-        self.view.checkboxes["0"].disabled = True
-        self.view.selectable_window_vbox.children=[self.view.selectable_window]
+        
+        self.view.selectable_window_vbox.children=[self.comparetab_header, self.view.selectable_window]
         return
     
     def refresh_manage_jobs_status(self,_):
@@ -288,8 +314,11 @@ class Controller(logging.Handler):
         conn.close()
         #For alignment finding the max length of each column
         for row in rows:
-            job_id = row[1]
-            remote_job_id = row[7]
+            # job_id was incorrectly set to row[1] which is the submitId
+            job_id = row[0]
+            #Jungha Woo
+            #We will use submitId for remote job id. Remote job id field will be deleted later.
+            remote_job_id = row[1]
             if row[4] in ['Pending', 'Queued', 'Running']:
                 submit = subprocess.run(["submit", "--status" ,str(remote_job_id) ], capture_output=True)
                 output = submit.stdout.decode("utf-8")

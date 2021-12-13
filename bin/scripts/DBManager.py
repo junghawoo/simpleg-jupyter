@@ -49,22 +49,20 @@ class DBManager:
         # Creating the Table and the DB File
         sql = '''
         CREATE TABLE IF NOT EXISTS SIMPLEJobs (
-            jobid INTEGER PRIMARY KEY,
+            jobid INTEGER PRIMARY KEY AUTOINCREMENT,
             submitId TEXT,
             submitTime TEXT,
             author TEXT,
             jobstatus TEXT,
             jobname TEXT,
             modeltype TEXT,
-            remotejobid INTEGER,
             description TEXT
         );
         '''
         cursor.execute(sql)
         conn.commit()
         conn.close()
-        if(len(self.getJobList())==0):
-            self.createNewJob("Model Type","Name","Description","Status","Author","0")
+
         return
     
     def createNewJob(self,model_dd,name,description,status,author,remotejobid):
@@ -72,22 +70,20 @@ class DBManager:
         now = datetime.datetime.now()
         submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
         
-        rows = self.getJobList()
-        
-        con = sqlite3.connect(self.DB_FILE)
-        job_id_new = 0
-        for row in rows:
-            if(int(row[1]) > job_id_new):
-                job_id_new = int(row[1])
-        job_id_new += 1 
-        if remotejobid == "0":
-            job_id_new = 0
-        #conn = self.conn
-        conn = con.cursor()
-        sql = 'insert into SIMPLEJobs(jobid,submitId,submitTime,author,jobstatus,jobname,modeltype,remotejobid,description) values (?,?,?,?,?,?,?,?,?);'
-        conn.execute(sql,(job_id_new,job_id_new,submit_time,author,status,name,model_dd,remotejobid,description))
-        con.commit()
-        con.close()
+        # to ensure unique job id, we delegate job id creation to the database table using autoincrement keyword.
+        # the unique key is retrieved by remotejob id.
+        conn = sqlite3.connect(self.DB_FILE)
+        sql = 'insert into SIMPLEJobs(submitId, submitTime,author,jobstatus,jobname,modeltype, description) values (?,?,?,?,?,?,?);'
+        conn.execute(sql,(remotejobid,submit_time,author,status,name,model_dd, description))
+        conn.commit()
+
+
+        sql = 'select jobid from SIMPLEJobs where submitId=? order by jobid desc limit 1;'
+        cur = conn.execute(sql, (remotejobid))
+        job_id_new = cur.fetchone()[0]
+
+        conn.commit()
+        conn.close()
         return job_id_new
 
     def updateJobInfo(self, jobid, params):
@@ -120,7 +116,7 @@ class DBManager:
         return True
 
     def updateRemoteID(self,jobid,remote_jobid):
-        sql = 'update SIMPLEJobs set remotejobid = ? where jobid = ?;'
+        sql = 'update SIMPLEJobs set submitId = ? where jobid = ?;'
 
         con = sqlite3.connect(self.DB_FILE)
         conn = con.cursor()
