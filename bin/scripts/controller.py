@@ -31,6 +31,7 @@ import branca.colormap as cm
 from pathlib import Path
 import subprocess
 import sys
+from scripts.SIMPLEUtil import SIMPLEUtil
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -341,8 +342,97 @@ class Controller(logging.Handler):
         self.refresh_manage_jobs("None")        
         self.view.refresh_btn.disabled = False
         return
-        
     
+    #List the options that the user can select. 
+    def options_available(self,diff):
+        directories = []
+        #print(SIMPLEUtil.PRIVATE_JOBS_DIR)
+        #Only one file to display
+        if diff == 1:
+            isprivate = self.view.job_selection[0][1]
+            job_id = self.view.job_selection[0][0]
+            path  = None
+            #List public job directories
+            if isprivate == 0:
+                path = "/data/groups/simpleggroup/job/" + job_id + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.join(path,i), f))]
+                    for j in names:
+                        temp = "/data/groups/simpleggroup/job/" + job_id + "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories.append(k)
+            #List private job directories            
+            else:
+                path = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.join(path,i), f))]
+                    for j in names:
+                        temp = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id + "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories.append(k)
+                        
+        #Multiple Files to compare        
+        else:
+            directories_1 = []
+            directories_2 = []
+            isprivate_1 = self.view.job_selection[0][1]
+            job_id_1 = self.view.job_selection[0][0]
+            isprivate_2 = self.view.job_selection[1][1]
+            job_id_2 = self.view.job_selection[1][0]
+            #First job Public 
+            if isprivate_1 == 0:
+                path = "/data/groups/simpleggroup/job/" + job_id_1 + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.join(path,i), f))]
+                    for j in names:
+                        temp = "/data/groups/simpleggroup/job/" + job_id_1 + "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories_1.append(k)
+            #First job private
+            else:
+                path = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id_1 + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.join(path,i), f))]
+                    for j in names:
+                        temp = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id_1+ "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories_1.append(k)
+            #Second job public
+            if isprivate_2 == 0:
+                path = "/data/groups/simpleggroup/job/" + job_id_2 + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.join(path,i), f))]
+                    for j in names:
+                        temp = "/data/groups/simpleggroup/job/" + job_id_2 + "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories_2.append(k)
+            
+            #Second job private
+            else:
+                path = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id_2 + "/outputs/results/"
+                types= [f for f in os.listdir(path) if os.path.isdir(os.path.join(path, f))]
+                for i in types:
+                    names = [f for f in os.listdir(os.path.join(path,i)) if os.path.isdir(os.path.join(os.path.joinn(path,i), f))]
+                    for j in names:
+                        temp = SIMPLEUtil.PRIVATE_JOBS_DIR+'/' + job_id_2 + "/outputs/results/"+ i + "/" + j + "/"
+                        types = [f for f in os.listdir(temp) if os.path.isdir(os.path.join(temp, f))]
+                        for k in types:
+                            directories.append(k)
+                        
+            directories = list(set(directories_1).intersection(directories_2))   
+        
+        return directories
+        
     def cb_display_btn(self,_):
         self.view.system_component.value = self.view.system_component.options[0]
         self.view.job_display = []
@@ -366,8 +456,13 @@ class Controller(logging.Handler):
             if self.view.shared_checkboxes[job].value == True:
                 self.create_map_widget(job,0)
                 self.view.job_display.append([job,0])
-                break           
-        return
+                break
+        options_available = self.options_available(1)
+        to_list_opt = "Options Available:"
+        for i in options_available:
+                to_list_opt = to_list_opt + "<br>" + i 
+        self.view.options_available.value = to_list_opt
+        return 
     
     def create_map_widget(self,map_id,is_private):
         map_wid = CustomMap("1200px","720px")
@@ -599,7 +694,7 @@ class Controller(logging.Handler):
         self.view.view_button_submit.disabled = True
         if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-"):
             return
-        final_result={"N-use Grid":"Nitrogen Use by Grid, Type (in MT)","Water Use Grid":"Water Use by Grid (in 1000 m^3 yr)","Water Use Region":"Water Use by Region (in 1000 m^3 yr)","Water per Ha":"Water per Ha by Region (in m^3 yr / ha)","Land Use Region Type":"Cropland Area by Region, Type (in 1000 ha)"," Land Use-Region":"Cropland Area by Region (in 1000 ha)","Output Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Yield Region":"Crop Yield by Region (in MT per ha)","Regional Price":"Corn Soy Supply Price by Region (in USD / MT)","Net Export":"Corn Soy Net Exports by Region (in 1000 MT Corn eq)","Output Region":"Corn Soy Output by Region (in 1000 MT Corn eq)","World Price":"World Corn Soy Price(in USD / MT)","Land Use Grid":"Cropland Area by Grid, Type (in 1000 ha)","N use Grid":"Nitrogen Leaching by Grid Type (in kg per ha)","N Leach Int - Grid":"Nitrogen Leaching Intensity by Grid Type (in MT per USD N use)","Price of N - Grid":"Price of Nitrogen by Grid Type (in USD / MT)","Output - Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Output - Region":"Corn Soy Output by Region (in 1000 MT Corn eq)"}
+        final_result={"N-use Grid":"Nitrogen Use by Grid, Type (in MT)","Water Use Grid":"Water Use by Grid (in 1000 m^3 yr)","Water Use Region":"Water Use by Region (in 1000 m^3 yr)","Water per Ha":"Water per Ha by Region (in m^3 yr / ha)","Land Use Region Type":"Cropland Area by Region, Type (in 1000 ha)","Land Use-Region":"Cropland Area by Region (in 1000 ha)","Output Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Yield Region":"Crop Yield by Region (in MT per ha)","Regional Price":"Corn Soy Supply Price by Region (in USD / MT)","Net Export":"Corn Soy Net Exports by Region (in 1000 MT Corn eq)","Output Region":"Corn Soy Output by Region (in 1000 MT Corn eq)","World Price":"World Corn Soy Price(in USD / MT)","Land Use Grid":"Cropland Area by Grid, Type (in 1000 ha)","N use Grid":"Nitrogen Leaching by Grid Type (in kg per ha)","N Leach Int - Grid":"Nitrogen Leaching Intensity by Grid Type (in MT per USD N use)","Price of N - Grid":"Price of Nitrogen by Grid Type (in USD / MT)","Output - Grid":"Corn Soy Output by Grid, Type (in 1000 MT Corn eq)","Output - Region":"Corn Soy Output by Region (in 1000 MT Corn eq)"}
         try:
             self.view.longname.value="<br><br><br>"+final_result[self.view.name_dd.value]
         except:
@@ -655,5 +750,10 @@ class Controller(logging.Handler):
         else:
             self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
             self.create_map_widget_compare(self.view.job_selection)
+            options_available = self.options_available(2)
+            to_list_opt = "Options Available:"
+            for i in options_available:
+                to_list_opt = to_list_opt + "<br>" + i 
+            self.view.options_available.value = to_list_opt
         return
     

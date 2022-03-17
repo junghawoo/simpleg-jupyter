@@ -92,6 +92,7 @@ class View:
         self.selectable_window_vbox = None
         self.shared_selectable_window_vbox = None
         self.longname = None
+        self.options_available = None
         #About Tab
         self.allcrops_download = None
         self.cornsoy_download = None
@@ -318,7 +319,8 @@ class View:
         
         self.view_button_submit = ui.Button(description = 'SUBMIT')
         self.longname = ui.HTML(value="Long Name will be displayed here")
-        content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout),self.longname])
+        self.options_available = ui.HTML(value="Options Available: ")
+        content=section_horizontal("Select Options for displaying maps",[self.options_available,ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout),self.longname])
         
         map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
         freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)

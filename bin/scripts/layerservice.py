@@ -33,7 +33,8 @@ gdal.UseExceptions()
 class RasterLayerUtil:
     def __init__(self, variable_model: VariableModel):
         print(variable_model.file_path())
-        assert variable_model.file_path().exists()
+        if not variable_model.file_path().exists():
+            raise Exception('File does not exist!')
         assert variable_model.is_raster()
 
         self.variable_model: VariableModel = variable_model

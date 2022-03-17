@@ -57,7 +57,7 @@ class VariableModel:
 
     def simple_variable(self) -> str:
         simple_variable = VariableService.simple_variable(self.id_str, self.system_component(),self.spatial_resolution(),self.model_name)
-        
+        print(simple_variable)
         return simple_variable
 
     def file_path(self) -> Path:
@@ -284,6 +284,7 @@ class VariableService:
         simple_variable = ""
         # print(system_component)
         #print(model_name)
+        #Mapping the Simple Variable to the Type as specified in the Mapping files in the /bin directory
         if(spatial_resolution =="Regional"):
             if(system_component=="Land"):
                 if(model_name=="Land Use Region Type"):
@@ -315,6 +316,18 @@ class VariableService:
                 simple_variable = "p_QCROPgl"
         if(model_name=="Output - Region" and system_component=="Production"):
                 simple_variable = "p_QCROPr"
+        if(model_name=="Land Use Grid" and system_component=="Land"):
+                simple_variable = "p_QLANDgl"
+        #Place Holder
+        if(model_name == "asdasd"):
+                simple_variable = ""
+        #Place Holder        
+        if(model_name == ""):
+                simple_variable = ""
+        #Place Holder
+        if(model_name == ""):
+                simple_variable = ""
+        #Place Holder
         if(simple_variable == ""):
             simple_variable = directories[0]
         return simple_variable
