@@ -57,19 +57,34 @@ class VariableModel:
 
     def simple_variable(self) -> str:
         simple_variable = VariableService.simple_variable(self.id_str, self.system_component(),self.spatial_resolution(),self.model_name)
-        print(simple_variable)
+        
         return simple_variable
 
     def file_path(self) -> Path:
         # NOTE: Variable path format - .../system component/spatial resolution/SIMPLE variable/type of result/result to
         # view
-
-        return VariableService.result_to_view_path(self.id_str, self.system_component(), self.spatial_resolution(),
+        
+        temp = VariableService.result_to_view_path(self.id_str, self.system_component(), self.spatial_resolution(),
                                                    self.type_of_result(), self.result_to_view(),self.model_name,self.is_private)
+        path = str(temp).rsplit('/',1)[0]
+        files = os.listdir(path)
+        for i in files:
+            if 'tif' in i.rsplit('.',1)[1]:
+                path = str(temp).rsplit('.',1)[0]
+                path = path +"."+i.rsplit('.',1)[1]
+                return Path(path)
+                break
+        path = str(temp).rsplit('.',1)[0]
+        path = path + ".shp"
+        return Path(path)
 
     def is_raster(self):
-        extension = splitext(str(self.file_path()))[1]
-        return ".tif" in extension  # Can be .tiff too
+        path = str(self.file_path()).rsplit('/',1)[0]
+        files = os.listdir(path)
+        for i in files:
+            if ".tif" in i:
+                return True
+        return False  # Can be .tiff too
 
     def is_vector(self):
         return not self.is_raster()
@@ -281,55 +296,7 @@ class VariableService:
     def simple_variable(cls, id_str: str, system_component: str, spatial_resolution: str,model_name: str,is_private: int) -> str:
         spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
         directories = listdir(str(spatial_resolution_path))
-        simple_variable = ""
-        # print(system_component)
-        #print(model_name)
-        #Mapping the Simple Variable to the Type as specified in the Mapping files in the /bin directory
-        if(spatial_resolution =="Regional"):
-            if(system_component=="Land"):
-                if(model_name=="Land Use Region Type"):
-                    simple_variable = "p_QLANDrl"
-                else:
-                    simple_variable = "p_QLANDr"
-            if(system_component=="Water"):
-                if(model_name=="Water Use Region"):
-                    simple_variable = "p_QWATERr"
-                else:
-                    simple_variable = "p_QWATERha_r"
-            if(system_component=="Production"):
-                if(model_name=="Yield Region"):
-                    simple_variable = "p_YIELDr"
-                if(model_name=="Regional Price"):
-                    simple_variable = "p_PCROPr"
-                if(model_name=="Net Export"):
-                    simple_variable = "p_QCRPTRADEr"
-                if(model_name=="Output Region"):
-                    simple_variable = "p_QCROPr"
-           
-        if(model_name=="N use Grid" and system_component=="Environment"):
-                simple_variable = "p_QNLEACHha_gl"
-        if(model_name=="N Leach Int - Grid" and system_component=="Environment"):
-                simple_variable = "p_LEACHINTgl"
-        if(model_name=="Price of N - Grid" and system_component=="Environment"):
-                simple_variable = "p_PNITROgl"
-        if(model_name=="Output - Grid" and system_component=="Prodcution"):
-                simple_variable = "p_QCROPgl"
-        if(model_name=="Output - Region" and system_component=="Production"):
-                simple_variable = "p_QCROPr"
-        if(model_name=="Land Use Grid" and system_component=="Land"):
-                simple_variable = "p_QLANDgl"
-        #Place Holder
-        if(model_name == "asdasd"):
-                simple_variable = ""
-        #Place Holder        
-        if(model_name == ""):
-                simple_variable = ""
-        #Place Holder
-        if(model_name == ""):
-                simple_variable = ""
-        #Place Holder
-        if(simple_variable == ""):
-            simple_variable = directories[0]
+        simple_variable = model_name
         return simple_variable
 
     @classmethod
