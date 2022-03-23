@@ -57,7 +57,11 @@ class View:
         self.tabs = None  # Main UI container
         self.debug_output = None
         self.display_object = None
+        #[['job_id','private or public'],['job_id','private or public']]
+        #1 for private 0 for public
         self.job_selection = []
+        #When the user selects a job it populates these variables with the possible options
+        self.dynamic_options = None
        
         
         #Create Tab
@@ -92,7 +96,7 @@ class View:
         self.selectable_window_vbox = None
         self.shared_selectable_window_vbox = None
         self.longname = None
-        self.options_available = None
+        
         #About Tab
         self.allcrops_download = None
         self.cornsoy_download = None
@@ -305,22 +309,22 @@ class View:
         #The functions cb_model_mapping is for this
         #It would also disable some dropdowns if it is of no use
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
-        self.system_component=ui.Dropdown(options = ["-","Environment","Land","Production","Water"],value = '-',description='System Component:',disabled=False,style=dict(description_width='initial'))
+        self.system_component=ui.Dropdown(options = ["-"],value = '-',description='System Component:',disabled=False,style=dict(description_width='initial'))
         
-        self.resolution=ui.Dropdown(options = ["-","Geospatial","Regional","Global"],value = '-',description='Spatial Resolution:',disabled=False ,style=dict(description_width='initial'))
+        self.resolution=ui.Dropdown(options = ["-"],value = '-',description='Spatial Resolution:',disabled=False ,style=dict(description_width='initial'))
         
-        self.type_of_result=ui.Dropdown(options = ["-","Absolute Changes","Base Value","Updated Value", "Percent Changes"],value = '-',description='Type of Result:',disabled=False ,style=dict(description_width='initial'))
+        self.type_of_result=ui.Dropdown(options = ["-"],value = '-',description='Type of Result:',disabled=False ,style=dict(description_width='initial'))
         
-        self.result_to_view = ui.Dropdown(options = ["-","Irrigated","Rainfed"],value = '-',description='Result to View:',disabled=False,style=dict(description_width='initial'))
+        self.result_to_view = ui.Dropdown(options = ["-"],value = '-',description='Result to View:',disabled=False,style=dict(description_width='initial'))
         
-        self.name_dd = ui.Dropdown(options = ["-","Names"],value = '-',description='Model Selection:',disabled=False,style=dict(description_width='initial'))
+        self.name_dd = ui.Dropdown(options = ["-"],value = '-',description='Model Selection:',disabled=False,style=dict(description_width='initial'))
         
         self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
         
         self.view_button_submit = ui.Button(description = 'SUBMIT')
         self.longname = ui.HTML(value="Long Name will be displayed here")
-        self.options_available = ui.HTML(value="Options Available: ")
-        content=section_horizontal("Select Options for displaying maps",[self.options_available,ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout),self.longname])
+        
+        content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit],layout=box_layout),self.longname])
         
         map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
         freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
