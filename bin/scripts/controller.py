@@ -22,7 +22,7 @@ from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
 import pandas as pd
 import geopandas as gpd
-from ipyleaflet import GeoData,Choropleth
+from ipyleaflet import GeoData,Choropleth,Marker
 import branca.colormap as cm
 import fiona 
 import numpy as np
@@ -32,6 +32,8 @@ from pathlib import Path
 import subprocess
 import sys
 from scripts.SIMPLEUtil import SIMPLEUtil
+import psutil
+import rasterio
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -81,6 +83,11 @@ class Controller(logging.Handler):
         self.view = None
         self.db_class_import = None
         self.cursor= None
+        #Varaible Model needs to be accessed from the location button callback
+        self.variable_model = None
+        self.variable_model_1 = None
+        self.layer_util = None
+        self.layer_util_1 = None
 
     def intro(self, model, view):
         """Introduce MVC modules to each other"""
@@ -126,19 +133,24 @@ class Controller(logging.Handler):
             self.view.view_button_submit.on_click(self.cb_tif_display)
             
             #View Tab If the system component dropdown changes
+            #self.view.values_change[0]
             self.view.system_component.observe(self.cb_model_mapping)
             
             #View Tab If the spatial resolution dropdown changes
+            #self.view.values_change[1]
             self.view.resolution.observe(self.cb_model_mapping_name)
             
             #View Tab If the model selection dropdown changes
+            #self.view.values_change[2]
             self.view.name_dd.observe(self.cb_model_mapping_type)
             
-            #View Tab If the type of result dropdown changes
-            self.view.type_of_result.observe(self.cb_submit_button_enable)
-            
             #View Tab If the result to view dropdown changes
+            #self.view.values_change[3]
             self.view.result_to_view.observe(self.cb_result_to_view)
+            
+            #View Tab If the type of result dropdown changes
+            #self.view.values_change[4]
+            self.view.type_of_result.observe(self.cb_submit_button_enable)
             
             #Manage Tab Compare Button, two jobs
             self.view.compare_btn.on_click(self.cb_compare_models)
@@ -149,6 +161,8 @@ class Controller(logging.Handler):
             #Create Tab Submit job to cluster
             self.view.submit_button.on_click(self.cb_upload_btn_create)
             
+            #location button view tab, get lat and longitude
+            self.view.view_location_button.on_click(self.cb_marker_movement)
 
         except Exception:
             self.logger.error('EXCEPTION\n' + traceback.format_exc())
@@ -207,7 +221,7 @@ class Controller(logging.Handler):
             command = "SIMPLE_G_CornSoy.cmf"
             command_simple = "simpleg_us_corn"
         #Run the submit tool    
-        submit = subprocess.run(["submit", "--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
+        submit = subprocess.run(["submit", "-v","--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
         # Path needs to be outputs not out
         get_id = submit.stdout.decode("utf-8")
         print("get_id:{}".format(get_id))
@@ -474,7 +488,9 @@ class Controller(logging.Handler):
         return
     
     def cb_tif_display(self,_):
-        
+        #Check ram and cpu usage before display.
+        #print('The CPU usage is: ', psutil.cpu_percent(4))
+        #print('RAM memory % used:', psutil.virtual_memory()[2])
         for i in range(1,len(self.view.view_vbox.children)):
             #Checking to see whether the Accordian has a single map or multiple maps
             if(len(self.view.view_vbox.children[i].children[0].children)>1):
@@ -484,9 +500,9 @@ class Controller(logging.Handler):
                     map_id = self.view.job_selection[0][0]
                     map_id_1 = self.view.job_selection[1][0]
                     
-                    variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
+                    self.variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
                     
-                    variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
+                    self.variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
                     
                     map_wid = mapbox.children[0]
                     map_wid_1 =mapbox.children[1]
@@ -495,27 +511,39 @@ class Controller(logging.Handler):
                     if len(map_wid_1.layers) == 2:
                         map_wid_1.remove_layer(map_wid_1.layers[1])
                     #break
-                    
-                    if variable_model.is_raster():
-                        layer_util = RasterLayerUtil(variable_model)
+                    #Delete marker layer
+                    if len(map_wid.layers)==3:
+                        map_wid.remove_layer(map_wid.layers[1])
+                        map_wid.remove_layer(map_wid.layers[2])
+                    if len(map_wid_1.layers)==3:
+                        map_wid_1.remove_layer(map_wid_1.layers[1])
+                        map_wid_1.remove_layer(map_wid_1.layers[2])
+                        
+                    if self.variable_model.is_raster():
+                        layer_util = RasterLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
                         map_wid.visualize_raster(layer, layer_util.processed_raster_path)
+                        self.layer_util = layer_util
                     
-                        layer_util = RasterLayerUtil(variable_model_1)
+                        layer_util = RasterLayerUtil(self.variable_model_1)
                         layer = layer_util.create_layer()
                         map_wid_1.visualize_raster(layer, layer_util.processed_raster_path)
+                        self.layer_util_1 = layer_util
                     
                     elif variable_model.is_vector():
-                        layer_util = VectorLayerUtil(variable_model)
+                        layer_util = VectorLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
                         map_wid.add_layer(layer)
                         layer_util.create_legend(map_wid)
-                    
-                        layer_util = VectorLayerUtil(variable_model_1)
+                        self.layer_util = None
+                        
+                        layer_util = VectorLayerUtil(self.variable_model_1)
                         layer = layer_util.create_layer()
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
-                      
+                        self.layer_util = None
+                    marker = Marker(location=(38,- 99), draggable=True, title="Marker", alt="Test")
+                    map_wid.add_layer(marker)  
 
                     break     
                 except Exception as e:
@@ -526,22 +554,32 @@ class Controller(logging.Handler):
             try:
                 mapbox = self.view.view_vbox.children[i]
                 map_id = self.view.job_selection[0][0]
-                variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
+                self.variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
                 mapbox.children[0].children[0].close()
                 mapbox.children[0].children = [CustomMap("1200px","720px")]
                 map_wid = mapbox.children[0].children[0]
                 if len(map_wid.layers) == 2:
                     #print("Deleting Layers")
-                    map_wid.remove_layer(map_wid.layers[1]) 
-                if variable_model.is_raster():
-                    layer_util = RasterLayerUtil(variable_model)
+                    map_wid.remove_layer(map_wid.layers[1])
+                #Delete marker layer as well    
+                if len(map_wid.layers)==3:
+                    map_wid.remove_layer(map_wid.layers[1])
+                    map_wid.remove_layer(map_wid.layers[2])
+                if self.variable_model.is_raster():
+                    layer_util = RasterLayerUtil(self.variable_model)
                     layer = layer_util.create_layer()
                     map_wid.visualize_raster(layer, layer_util.processed_raster_path)
-                elif variable_model.is_vector():
-                    layer_util = VectorLayerUtil(variable_model)
+                    self.layer_util = layer_util
+                    self.layer_util_1 = None
+                elif self.variable_model.is_vector():
                     layer = layer_util.create_layer()
                     map_wid.add_layer(layer)
-                    layer_util.create_legend(map_wid)           
+                    layer_util.create_legend(map_wid)
+                    self.layer_util = None
+                    self.layer_util_1 = None
+                marker = Marker(location=(38, - 99), draggable=True, title="Marker", alt="Test")
+                map_wid.add_layer(marker)
+                
                 break
             except Exception as e:
                 print(e)
@@ -611,6 +649,7 @@ class Controller(logging.Handler):
         return list(set(results))
     #If the name drop down changes
     def cb_model_mapping_type(self,_):
+        self.view.type_of_result.observe(self.cb_submit_button_enable)
         self.view.type_of_result.value=self.view.type_of_result.options[0]
         self.view.view_button_submit.disabled = True
         self.view.type_of_result.options = ["-"]
@@ -704,4 +743,88 @@ class Controller(logging.Handler):
             self.view_layer_options("Garbage")
             self.create_map_widget_compare(self.view.job_selection)
         return
-    
+    # When the location button is clicked on the view tab
+    def cb_marker_movement(self,_):
+                #Retrieving the marker element from the first map
+                mapbox = self.view.view_vbox.children[1]
+                map_id = self.view.job_selection[0][0]
+                map_wid = mapbox.children[0].children[0]
+                marker = map_wid.layers[2]
+                # The location is in reverse order of how it is to be entered in the rasterio library
+                #print("Location: ")
+                #print(marker.location)
+                coords = [marker.location]
+                print(coords)
+                #Reversing the tuple
+                coords = [x[::-1] for x in coords]
+                #print(coords)
+                #Empty processed file, the tiff file has not been displayed or it is a shp file
+                if self.layer_util == None:
+                    print("Layer Util None")
+                    return
+                # There is no file or there is an error retrieving or processing the tiff file
+                if self.variable_model == None:
+                    print("Variable Model None")
+                    return
+                #Display Feature, only 1 map
+                if(self.variable_model_1==None):
+                    #Path of the tiff file retrieved from variable model
+                    path = self.variable_model.file_path()
+                    #Open the tiff file to query
+                    src = rasterio.open(str(path))
+                    #print(src.sample(coords))
+                    #print(path)
+                    #Print the value of the co-ordinates
+                    pts = [x[0] for x in src.sample(coords)]
+                    print(pts)
+                #Two maps compare
+                else:
+                    path = self.variable_model.file_path()
+                    src = rasterio.open(str(path))
+                    #print(src.sample(coords))
+                    #print(path)
+                    pts = [x[0] for x in src.sample(coords)]
+                    #print(pts)
+                    
+                    path = self.variable_model_1.file_path()
+                    src = rasterio.open(str(path))
+                    #print(src.sample(coords))
+                    #print(path)
+                    pts_1 = [x[0] for x in src.sample(coords)]
+                    #print(pts)
+                    
+                    print("1st Map")
+                    print(pts)
+                    print("2nd Map")
+                    print(pts_1)
+                processed_tif_values = """
+                # This is for querying the processed file path. 
+                if(self.layer_util_1==None):
+                    path = self.layer_util.processed_raster_path
+                    src = rasterio.open(str(path))
+                    #print(src.sample(coords))
+                    pts = [x[0] for x in src.sample(coords)]
+                    print(path)
+                    print(pts)
+                #Two maps compare
+                else:
+                    path = self.layer_util.processed_raster_path
+                    src = rasterio.open(str(path))
+                    #print(src.sample(coords))
+                    pts = [x[0] for x in src.sample(coords)]
+                    print(pts)
+                    
+                    
+                    path_1 = self.layer_util_1.processed_raster_path
+                    src_1 = rasterio.open(str(path_1))
+                    #print(src.sample(coords))
+                    pts_1 = [x[0] for x in src.sample(coords)]
+                    print(pts_1)
+                    
+                    print("1st Map")
+                    print(path)
+                    print(pts)
+                    print("2nd Map")
+                    print(path)
+                    print(pts_1)
+               """
