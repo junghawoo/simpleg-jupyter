@@ -208,6 +208,7 @@ class RasterLayerUtil:
         # Removed the -e to make sure new temp files and processing is done again
         #print(str(self._colorized_tif_path))
         gdal2tiles.run(["-z", "0-8", "-a", "0, 0, 0", "--processes=2", str(self._colorized_tif_path), str(self._tile_folder_path)])
+        #gdal2tiles.run(["gdal2tiles.py","-l","-p","raster","-z", "0-8","-w","none",str(self._colorized_tif_path), str(self._tile_folder_path)])
         return True
 
     def _remove_temp_files(self) -> bool:
