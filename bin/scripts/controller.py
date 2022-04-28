@@ -161,8 +161,6 @@ class Controller(logging.Handler):
             #Create Tab Submit job to cluster
             self.view.submit_button.on_click(self.cb_upload_btn_create)
             
-            #location button view tab, get lat and longitude
-            self.view.view_location_button.on_click(self.cb_marker_movement)
 
         except Exception:
             self.logger.error('EXCEPTION\n' + traceback.format_exc())
@@ -542,8 +540,6 @@ class Controller(logging.Handler):
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
                         self.layer_util = None
-                    marker = Marker(location=(38,- 99), draggable=True, title="Marker", alt="Test")
-                    map_wid.add_layer(marker)  
 
                     break     
                 except Exception as e:
@@ -577,8 +573,6 @@ class Controller(logging.Handler):
                     layer_util.create_legend(map_wid)
                     self.layer_util = None
                     self.layer_util_1 = None
-                marker = Marker(location=(38, - 99), draggable=True, title="Marker", alt="Test")
-                map_wid.add_layer(marker)
                 
                 break
             except Exception as e:
@@ -744,87 +738,3 @@ class Controller(logging.Handler):
             self.create_map_widget_compare(self.view.job_selection)
         return
     # When the location button is clicked on the view tab
-    def cb_marker_movement(self,_):
-                #Retrieving the marker element from the first map
-                mapbox = self.view.view_vbox.children[1]
-                map_id = self.view.job_selection[0][0]
-                map_wid = mapbox.children[0].children[0]
-                marker = map_wid.layers[2]
-                # The location is in reverse order of how it is to be entered in the rasterio library
-                #print("Location: ")
-                #print(marker.location)
-                coords = [marker.location]
-                print(coords)
-                #Reversing the tuple
-                coords = [x[::-1] for x in coords]
-                #print(coords)
-                #Empty processed file, the tiff file has not been displayed or it is a shp file
-                if self.layer_util == None:
-                    print("Layer Util None")
-                    return
-                # There is no file or there is an error retrieving or processing the tiff file
-                if self.variable_model == None:
-                    print("Variable Model None")
-                    return
-                #Display Feature, only 1 map
-                if(self.variable_model_1==None):
-                    #Path of the tiff file retrieved from variable model
-                    path = self.variable_model.file_path()
-                    #Open the tiff file to query
-                    src = rasterio.open(str(path))
-                    #print(src.sample(coords))
-                    #print(path)
-                    #Print the value of the co-ordinates
-                    pts = [x[0] for x in src.sample(coords)]
-                    print(pts)
-                #Two maps compare
-                else:
-                    path = self.variable_model.file_path()
-                    src = rasterio.open(str(path))
-                    #print(src.sample(coords))
-                    #print(path)
-                    pts = [x[0] for x in src.sample(coords)]
-                    #print(pts)
-                    
-                    path = self.variable_model_1.file_path()
-                    src = rasterio.open(str(path))
-                    #print(src.sample(coords))
-                    #print(path)
-                    pts_1 = [x[0] for x in src.sample(coords)]
-                    #print(pts)
-                    
-                    print("1st Map")
-                    print(pts)
-                    print("2nd Map")
-                    print(pts_1)
-                processed_tif_values = """
-                # This is for querying the processed file path. 
-                if(self.layer_util_1==None):
-                    path = self.layer_util.processed_raster_path
-                    src = rasterio.open(str(path))
-                    #print(src.sample(coords))
-                    pts = [x[0] for x in src.sample(coords)]
-                    print(path)
-                    print(pts)
-                #Two maps compare
-                else:
-                    path = self.layer_util.processed_raster_path
-                    src = rasterio.open(str(path))
-                    #print(src.sample(coords))
-                    pts = [x[0] for x in src.sample(coords)]
-                    print(pts)
-                    
-                    
-                    path_1 = self.layer_util_1.processed_raster_path
-                    src_1 = rasterio.open(str(path_1))
-                    #print(src.sample(coords))
-                    pts_1 = [x[0] for x in src.sample(coords)]
-                    print(pts_1)
-                    
-                    print("1st Map")
-                    print(path)
-                    print(pts)
-                    print("2nd Map")
-                    print(path)
-                    print(pts_1)
-               """
