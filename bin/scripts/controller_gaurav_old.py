@@ -22,7 +22,7 @@ from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
 import pandas as pd
 import geopandas as gpd
-from ipyleaflet import GeoData,Choropleth,Marker,GeoJSON
+from ipyleaflet import GeoData,Choropleth,Marker,AwesomeIcon,LayersControl
 import branca.colormap as cm
 import fiona 
 import numpy as np
@@ -34,8 +34,6 @@ import sys
 from scripts.SIMPLEUtil import SIMPLEUtil
 import psutil
 import rasterio
-import csv
-
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
 
@@ -163,11 +161,14 @@ class Controller(logging.Handler):
             #Create Tab Submit job to cluster
             self.view.submit_button.on_click(self.cb_upload_btn_create)
             
-            #Refresh location button view tab, get lat and longitude
+            #location button view tab, get lat and longitude
             self.view.view_location_button.on_click(self.cb_marker_movement)
             
-            #Export the selected points
-            self.view.location_export_btn.on_click(self.download_selected_points)
+            #Location Delete elements
+            self.view.location_delete_btn.on_click(self.cb_location_delete)
+            
+            #Location Export elements
+            self.view.location_export_btn.on_click(self.cb_location_export)
 
         except Exception:
             self.logger.error('EXCEPTION\n' + traceback.format_exc())
@@ -460,7 +461,44 @@ class Controller(logging.Handler):
                 self.view.job_display.append([job,0])
                 break
         return 
-    
+    #Update/List the location of points selected by the user.
+    def list_of_points(self,_):
+        #print("LIST OF POINTS")
+        
+        # to make sure at least one row will be displayed even when there is no job
+        if self.view.locations_list == [] or self.view.locations_list == None:
+            mininum_rows_to_display = 1
+        else:
+            mininum_rows_to_display = len(self.view.locations_list) + 1
+        self.view.location_grid = None
+        self.view.location_grid = ui.GridspecLayout(mininum_rows_to_display,6,height="auto")
+        self.view.location_grid[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
+        self.view.location_grid[0,2:4] = ui.HTML(value = f"<b><font color='#1167b1'>Location</b>")
+        self.view.location_grid[0,4:6] = ui.HTML(value = f"<b><font color='#1167b1'>Value</b>" )
+        #print(self.view.locations_list)
+        if self.view.locations_list  == []:
+            return
+        else:
+            #print("LIST OF POINTS")
+            for i in range(0,len(self.view.locations_list)):
+                #Checkbox
+                self.view.location_grid[i+1,1] = self.view.locations_list[i][0]
+                #Location
+                self.view.location_grid[i+1,2:4] = ui.HTML(str(self.view.locations_list[i][1]))
+                #Value
+                self.view.location_grid[i+1,4:6] = ui.HTML(str(self.view.locations_list[i][2]))
+        temp = ui.HBox([self.view.location_delete_btn,self.view.location_export_btn])
+        self.view.location_list_section.children = tuple([ui.VBox([ui.VBox([self.view.location_grid,temp])])])
+        return        
+                
+    #Create an accordian section for the list of points
+    def location_list_widget(self,_):
+        #Generate the Grid for 
+        self.list_of_points("Garbage Value")
+        temp = ui.HBox([self.view.location_delete_btn,self.view.location_export_btn])
+        self.view.location_list_section = section("Location List", [ui.VBox([self.view.location_grid,temp])])
+        return self.view.location_list_section
+        
     def create_map_widget(self,map_id,is_private):
         #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
@@ -475,7 +513,7 @@ class Controller(logging.Handler):
         self.view.view_vbox.children = tuple(temp_list)
         return
     def create_map_widget_compare(self,map_id):
-         #New map/Compare should have no points selected or no markers
+        #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
         map_wid = CustomMap("600px","720px")
         map_wid_1 = CustomMap("600px","720px")
@@ -522,13 +560,14 @@ class Controller(logging.Handler):
                         map_wid_1.remove_layer(map_wid_1.layers[1])
                     #break
                     #Delete marker layer
-                    if len(map_wid.layers)==3:
-                        map_wid.remove_layer(map_wid.layers[1])
-                        map_wid.remove_layer(map_wid.layers[2])
-                    if len(map_wid_1.layers)==3:
-                        map_wid_1.remove_layer(map_wid_1.layers[1])
-                        map_wid_1.remove_layer(map_wid_1.layers[2])
-                        
+                    if len(map_wid.layers)>=3:
+                        for layer_num in range(1,len(map_wid.layers)):
+                            map_wid.remove_layer(map_wid.layers[layer_num])
+                    if len(map_wid_1.layers)>=3:
+                        for layer_num in range(1,len(map_wid_1.layers)):
+                            map_wid_1.remove_layer(map_wid_1.layers[layer_num])
+
+                    #TIF file processing    
                     if self.variable_model.is_raster():
                         layer_util = RasterLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
@@ -539,7 +578,7 @@ class Controller(logging.Handler):
                         layer = layer_util.create_layer()
                         map_wid_1.visualize_raster(layer, layer_util.processed_raster_path)
                         self.layer_util_1 = layer_util
-                    
+                    #SHP File Processing
                     elif variable_model.is_vector():
                         layer_util = VectorLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
@@ -552,6 +591,8 @@ class Controller(logging.Handler):
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
                         self.layer_util = None
+                    marker = Marker(location=(38,- 99), draggable=True, title="Marker", alt="Test")
+                    map_wid.add_layer(marker)  
 
                     break     
                 except Exception as e:
@@ -570,9 +611,9 @@ class Controller(logging.Handler):
                     #print("Deleting Layers")
                     map_wid.remove_layer(map_wid.layers[1])
                 #Delete marker layer as well    
-                if len(map_wid.layers)==3:
-                    map_wid.remove_layer(map_wid.layers[1])
-                    map_wid.remove_layer(map_wid.layers[2])
+                if len(map_wid.layers)>=3:
+                    for layer_num in range(1,len(map_wid.layers)):
+                        map_wid.remove_layer(map_wid.layers[layer_num])
                 if self.variable_model.is_raster():
                     layer_util = RasterLayerUtil(self.variable_model)
                     layer = layer_util.create_layer()
@@ -585,6 +626,8 @@ class Controller(logging.Handler):
                     layer_util.create_legend(map_wid)
                     self.layer_util = None
                     self.layer_util_1 = None
+                marker = Marker(location=(38, - 99), draggable=True, title="Marker", alt="Test")
+                map_wid.add_layer(marker)
                 
                 break
             except Exception as e:
@@ -750,60 +793,25 @@ class Controller(logging.Handler):
             self.create_map_widget_compare(self.view.job_selection)
         return
     
-    #Get the list of points selected.
-    def list_of_points(self,_):
-        # to make sure at least one row will be displayed even when there is no job
-        if self.view.locations_list == [] or self.view.locations_list == None:
-            mininum_rows_to_display = 1
-        else:
-            mininum_rows_to_display = len(self.view.locations_list) + 1
-        self.view.location_grid = None
-        self.view.location_grid = ui.GridspecLayout(mininum_rows_to_display,6,height="auto")
-        self.view.location_grid[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
-        self.view.location_grid[0,2:4] = ui.HTML(value = f"<b><font color='#1167b1'>Location</b>")
-        self.view.location_grid[0,4:6] = ui.HTML(value = f"<b><font color='#1167b1'>Value</b>" )
-        #print(self.view.locations_list)
-        if self.view.locations_list  == []:
-            return
-        else:
-            #print("LIST OF POINTS")
-            for i in range(0,len(self.view.locations_list)):
-                #Checkbox
-                self.view.location_grid[i+1,1] = self.view.locations_list[i][0]
-                #Location
-                self.view.location_grid[i+1,2:4] = ui.HTML(str(self.view.locations_list[i][1]))
-                #Value
-                self.view.location_grid[i+1,4:6] = ui.HTML(str(self.view.locations_list[i][2]))
-        temp = ui.HBox([self.view.location_export_btn])
-        self.view.location_list_section.children = tuple([ui.VBox([ui.VBox([self.view.location_grid,temp])])])
-        return 
-    
-    
-    #Create an accordian section for the list of points
-    def location_list_widget(self,_):
-        #Generate the Grid for
-        self.list_of_points("Garbage Value")
-        temp = ui.HBox([self.view.location_export_btn])
-        self.view.location_list_section = section("Location List", [ui.VBox([self.view.location_grid,temp])])
-        return self.view.location_list_section
-
+        
+        
     # When the location button is clicked on the view tab
     def cb_marker_movement(self,_):
-                #Retrieving the map widget from the display
+                #Retrieving the marker element from the first map
                 mapbox = self.view.view_vbox.children[1]
                 map_id = self.view.job_selection[0][0]
                 map_wid = mapbox.children[0].children[0]
-                #print(map_wid.dc.data)
-                selected_markers = map_wid.selected_markers
+                
+                marker = map_wid.layers[-1]
                 # The location is in reverse order of how it is to be entered in the rasterio library
                 #print("Location: ")
                 #print(marker.location)
-                coords = selected_markers
+                coords = [marker.location]
                 #Orginal Location order, it is reversed later for rasterio
-                coords_og = coords
+                coords_og = coords[0]
                 #print(coords)
                 #Reversing the tuple
-                #coords = [x[::-1] for x in coords]
+                coords = [x[::-1] for x in coords]
                 #print(coords)
                 #Empty processed file, the tiff file has not been displayed or it is a shp file
                 if self.layer_util == None:
@@ -823,10 +831,18 @@ class Controller(logging.Handler):
                     #print(path)
                     #Print the value of the co-ordinates
                     pts = [x[0] for x in src.sample(coords)]
-                    for k in range(0,len(coords_og)):
-                        temp_checkbox = ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
-                        self.view.locations_list.append([temp_checkbox,coords_og[k],pts[k]])
-                    #print(self.view.locations_list)
+                    temp_checkbox = ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
+                    self.view.locations_list.append([temp_checkbox,coords_og,pts])
+                    #print(pts)
+                    #Make the point Static
+                    mapbox = self.view.view_vbox.children[1]
+                    map_wid = mapbox.children[0].children[0]
+                    map_wid.remove_layer(map_wid.layers[-1])
+                    icon1 = AwesomeIcon(name="fa-solid fa-location-pin",marker_color='red',icon_color='black',spin=False)
+                    marker = Marker(icon = icon1,location=coords_og, draggable=False, title="Marker "+str(len(map_wid.layers)-2), alt="Test")
+                    map_wid.add_layer(marker)
+                    marker = Marker(location=(38, - 99), draggable=True, title="Marker", alt="Test")
+                    map_wid.add_layer(marker)
                 #Two maps compare
                 else:
                     path = self.variable_model.file_path()
@@ -841,12 +857,20 @@ class Controller(logging.Handler):
                     #print(src.sample(coords))
                     #print(path)
                     pts_1 = [x[0] for x in src.sample(coords)]
-                    for k in range(0,len(coords_og)):
-                        temp_checkbox = ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
-                        self.view.locations_list.append([temp_checkbox,coords_og[k],[pts[k],pts_1[k]]])
+                    temp_checkbox = ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))
+                    self.view.locations_list.append([temp_checkbox,coords_og,[pts[0],pts_1[0]]])
                     mapbox = self.view.view_vbox.children[1]
                     map_wid = mapbox.children[0].children[0]
                     map_wid_1 = mapbox.children[0].children[1]
+                    icon1 = AwesomeIcon(name="fa-solid fa-location-pin fa-2xs",marker_color='red',icon_color='black',spin=False)
+                    marker = Marker(icon = icon1,location=coords_og, draggable=False, title="Marker "+str(len(map_wid.layers)-1), alt="Test")
+                    map_wid.remove_layer(map_wid.layers[-1])
+                    map_wid_1.remove_layer(map_wid_1.layers[-1])
+                    map_wid.add_layer(marker)
+                    map_wid_1.add_layer(marker)
+                    marker = Marker(location=(38, - 99), draggable=True, title="Marker", alt="Test")
+                    map_wid.add_layer(marker)
+                    map_wid_1.add_layer(marker)
                     #print(pts)
                     
                     #print("1st Map")
@@ -861,24 +885,24 @@ class Controller(logging.Handler):
                 #print("CONTROLS")
                 #print(map_wid.controls)
                 return
-            
-    def download_selected_points(self,_):
-        #Headers
-        header = ['Latitude', 'Longitude', 'Value']
-        #Data to write to CSV
-        temp_data = []
+                    
+    def cb_location_delete(self,_):
         for i in range(0,len(self.view.locations_list)):
-            #Checkbox True or Not
+            if(i>=len(self.view.locations_list)):
+                break
             if self.view.locations_list[i][0].value == True:
-                #Add the coordinates and values
-                temp_data.append([self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],self.view.locations_list[i][2]])
-        name = os.path.expanduser("~") + "/SimpleGTool/data.csv"
-        with open(name, 'w', encoding='UTF8', newline='') as f: 
-            writer = csv.writer(f)
-            # write the header
-            writer.writerow(header)
-            # write multiple rows
-            writer.writerows(temp_data)
-        print("File exported to "+name)
-        
-            
+                mapbox = self.view.view_vbox.children[1]
+                map_wid = mapbox.children[0].children[0]
+                map_wid.remove_layer(map_wid.layers[2+i])
+                if(len(self.view.view_vbox.children[1].children[0].children)>1):
+                    map_wid_1 =mapbox.children[0].children[1]
+                    map_wid_1.remove_layer(map_wid_1.layers[2+i])
+                self.view.locations_list.pop(i)
+                i = i - 1
+        self.list_of_points("Garbage Value")
+        return
+    
+    def cb_location_export(self,_):
+        print(self.view.locations_list)
+        return
+    

@@ -99,6 +99,11 @@ class View:
         self.view_location_button = None
         #To dismiss the callback function if there is no change in the value
         self.values_change = ["-","-","-","-","-"]
+        #To keep track of the locations added by the user
+        self.locations_list = []
+        self.location_export_btn = None
+        self.location_grid = None
+        self.location_list_section = None
         
         #About Tab
         self.allcrops_download = None
@@ -327,7 +332,7 @@ class View:
         self.view_button_submit = ui.Button(description = 'SUBMIT')
         self.longname = ui.HTML(value="Long Name will be displayed here")
         
-        self.view_location_button = ui.Button(description = 'Location')
+        self.view_location_button = ui.Button(description = 'Refresh Location List')
         
         content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button],layout=box_layout),self.longname])
         
@@ -353,6 +358,8 @@ class View:
                 layer_util = VectorLayerUtil(variable_model)
                 layer = layer_util.create_layer()
         '''
+        self.location_export_btn = ui.Button(description="Export",disabled=False)
+        self.location_export_btn.style.button_color='gray'
         self.view_button_submit.disabled = True
         self.view_vbox = ui.VBox(children=[content])
         return self.view_vbox
