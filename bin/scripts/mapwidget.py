@@ -66,37 +66,38 @@ class CustomMap(Map):
         self.add_control(WidgetControl(widget=self._legend_bar, position="bottomleft"))
         self.add_control(ZoomControl(position="topleft"))
         self.add_control(FullScreenControl(position="topleft"))
-        dc = DrawControl(position='topleft', marker={"shapeOptions": {"color": "#0000FF"}})
+        self.dc = DrawControl(position='topleft', marker={"shapeOptions": {"color": "#0000FF"}})
         
-        selected_markers=[]
+        self.selected_markers=[]
        
         #https://github.com/jupyter-widgets/ipyleaflet/blob/master/examples/DrawControl.ipynb
         #
         #https://notebook.community/rjleveque/binder_experiments/misc/ipyleaflet_polygon_selector
-        def handle_draw(self, action, geo_json):
+        def handle_draw(target, action, geo_json):
             """Do something with the GeoJSON when it's drawn on the map"""    
-            print("action:", action)
+            #print("action:", action)
 
             if action == 'created':
-                selected_markers.append(geo_json['geometry']['coordinates'])
-                print("coordinates:", geo_json['geometry']['coordinates'])
+                self.selected_markers.append(geo_json['geometry']['coordinates'])
+                #print("coordinates:", geo_json['geometry']['coordinates'])
                 
             elif action == 'deleted':
-                selected_markers.remove(geo_json['geometry']['coordinates'])
-                print("removed coordinates:", geo_json['geometry']['coordinates'])
+                self.selected_markers.remove(geo_json['geometry']['coordinates'])
+                #print("removed coordinates:", geo_json['geometry']['coordinates'])
 
             #returned coordinate is [longitude, latitude] which correspond to x and y of mercator projection 
-            print("selected_markers coordinates:", selected_markers)
+            #print("selected_markers coordinates:", self.selected_markers)
             #print("dc.data", dc.data)
-            #print("dc.marker", dc.marker)
             
-        dc.on_draw(handle_draw)
+        self.dc.on_draw(handle_draw)
 
-        self.add_control(dc)
+        self.add_control(self.dc)
         self.add_control(LayersControl(position="topright"))
         self.add_control(WidgetControl(widget=self._value_area, position="bottomright"))
         self.on_interaction(self._mouse_event)
-        
+    
+            #print("dc.marker", dc.marker)
+            
     def link(self, map_):
         assert isinstance(map_, self.__class__)
         jslink((self, "zoom"), (map_, "zoom"))
@@ -278,4 +279,3 @@ class LegendBar(VBox):
         assert 0 <= g <= 255
         assert 0 <= b <= 255
         return "#{:02x}{:02x}{:02x}".format(r,g,b)
-
