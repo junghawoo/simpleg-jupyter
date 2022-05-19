@@ -795,6 +795,7 @@ class Controller(logging.Handler):
                 map_wid = mapbox.children[0].children[0]
                 #print(map_wid.dc.data)
                 selected_markers = map_wid.selected_markers
+                self.view.locations_list = []
                 # The location is in reverse order of how it is to be entered in the rasterio library
                 #print("Location: ")
                 #print(marker.location)
@@ -864,14 +865,22 @@ class Controller(logging.Handler):
             
     def download_selected_points(self,_):
         #Headers
-        header = ['Latitude', 'Longitude', 'Value']
+        header = ['Public/Private','Path','Latitude', 'Longitude', 'Value']
         #Data to write to CSV
         temp_data = []
+        if self.variable_model == None:
+            return
+        else:
+            if self.variable_model.is_private == 1:
+                public_private = "Private"
+            else:
+                public_private = "Public"
+            path = self.variable_model.file_path()
         for i in range(0,len(self.view.locations_list)):
             #Checkbox True or Not
             if self.view.locations_list[i][0].value == True:
                 #Add the coordinates and values
-                temp_data.append([self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],self.view.locations_list[i][2]])
+                temp_data.append([public_private,path,self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],self.view.locations_list[i][2]])
         name = os.path.expanduser("~") + "/SimpleGTool/data.csv"
         with open(name, 'w', encoding='UTF8', newline='') as f: 
             writer = csv.writer(f)
