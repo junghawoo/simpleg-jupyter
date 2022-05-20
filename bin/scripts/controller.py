@@ -760,7 +760,7 @@ class Controller(logging.Handler):
         self.view.location_grid = None
         self.view.location_grid = ui.GridspecLayout(mininum_rows_to_display,6,height="auto")
         self.view.location_grid[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
-        self.view.location_grid[0,2:4] = ui.HTML(value = f"<b><font color='#1167b1'>Location</b>")
+        self.view.location_grid[0,2:4] = ui.HTML(value = f"<b><font color='#1167b1'>Location([longitude, latitude])</b>")
         self.view.location_grid[0,4:6] = ui.HTML(value = f"<b><font color='#1167b1'>Value</b>" )
         #print(self.view.locations_list)
         if self.view.locations_list  == []:
@@ -865,7 +865,7 @@ class Controller(logging.Handler):
             
     def download_selected_points(self,_):
         #Headers
-        header = ['Public/Private','Path','Latitude', 'Longitude', 'Value']
+        header = ['Public/Private','Path','Longitude', 'Latitude', 'Value']
         #Data to write to CSV
         temp_data = []
         if self.variable_model == None:
