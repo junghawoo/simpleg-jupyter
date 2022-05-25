@@ -880,7 +880,27 @@ class Controller(logging.Handler):
             #Checkbox True or Not
             if self.view.locations_list[i][0].value == True:
                 #Add the coordinates and values
+                #self.view.locations_list.append([temp_checkbox,coords_og[k],[pts[k],pts_1[k]]])
                 temp_data.append([public_private,path,self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],self.view.locations_list[i][2]])
+        #All files within the same job
+        #Collecting files with .tif extension to extract from
+        test = []
+        for root, dirs, files in os.walk(str(path).split("results/")[0]+"results/"):
+            for file in files:
+                if file[-3:] == "tif":
+                    test.append(root+"/"+'/'.join(x for x in dirs)+file)
+        for file in test:
+            for i in range(0,len(self.view.locations_list)):
+                if self.view.locations_list[i][0].value == True:
+                    #self.view.locations_list.append([temp_checkbox,coords_og[k],[pts[k],pts_1[k]]])
+                    coords_temp = [self.view.locations_list[i][1]]
+                    #print(coords_temp)
+                    src = rasterio.open(file)
+                    #print(src.sample(coords))
+                    #print(path)
+                    pts = [x[0] for x in src.sample(coords_temp)]
+                    temp_data.append([public_private,file,self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],pts[0]])
+                                         
         name = os.path.expanduser("~") + "/SimpleGTool/data.csv"
         with open(name, 'w', encoding='UTF8', newline='') as f: 
             writer = csv.writer(f)
