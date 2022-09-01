@@ -252,13 +252,14 @@ class Controller(logging.Handler):
         #1 for private 0 for public
         #self.model_type = 0
         #0 for all crops 1 for cornsoy
+        DEFAULT_JOB_START_INDEX = 1
         self.view.job_selection = []
         row_counter = 0
         self.model_type = []
         for jobid,checkbox in self.view.checkboxes.items():
             #print(self.view.selectable_window[row_counter,2].value + " all")
             if(checkbox.value == True):
-                self.view.job_selection.append([jobid,1])
+                self.view.job_selection.append([jobid, DEFAULT_JOB_START_INDEX])
                 #print(self.view.selectable_window)
                 #print(self.view.selectable_window[row_counter,2].value + " selected")
                 if(self.view.selectable_window[row_counter,2].value == "Custom Crops"):
@@ -270,7 +271,7 @@ class Controller(logging.Handler):
         row_counter = 0
         for jobid,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
-                self.view.job_selection.append([jobid,0])
+                self.view.job_selection.append([jobid,DEFAULT_JOB_START_INDEX])
                 if(self.view.shared_selectable_window[row_counter,2].value == "AllCrops"):
                     self.model_type.append(0)
                 else:
