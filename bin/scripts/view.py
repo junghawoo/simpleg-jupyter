@@ -238,6 +238,9 @@ class View:
         self.selectable_window = ui.GridspecLayout(mininum_rows_to_display,11,height="auto")
         row_counter = 0
         #Create a new dictionary key value pair for each jobid and checkbox
+        # Jungha
+        # The assumption for the jobid is not correct. 
+        # The jobid
         for row in rows:
             print(row)
             self.checkboxes[str(row_counter)]=ui.Checkbox(value=False,disabled=False,description="",indent=False,layout=ui.Layout(width="auto",height="auto"))

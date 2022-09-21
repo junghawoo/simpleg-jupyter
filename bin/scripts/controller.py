@@ -252,14 +252,23 @@ class Controller(logging.Handler):
         #1 for private 0 for public
         #self.model_type = 0
         #0 for all crops 1 for cornsoy
-        DEFAULT_JOB_START_INDEX = 1
         self.view.job_selection = []
         row_counter = 0
         self.model_type = []
-        for jobid,checkbox in self.view.checkboxes.items():
+        for jobIndexStr,checkbox in self.view.checkboxes.items():
             #print(self.view.selectable_window[row_counter,2].value + " all")
             if(checkbox.value == True):
-                self.view.job_selection.append([jobid, DEFAULT_JOB_START_INDEX])
+                # gets the real job id for the chosen row index
+                # jobIndexStr is a string so it needs to be converted into integer for lookup
+                #
+                # Jungha 
+                # The problem is that the job tables are not implemented using Model so 
+                # the mapping between visible index and the actual job id has to be done every time 
+                # a job is clicked.
+                
+                jobid = self.view.selectable_window[int(jobIndexStr), 1].value 
+                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
+                self.view.job_selection.append([jobid, 0])
                 #print(self.view.selectable_window)
                 #print(self.view.selectable_window[row_counter,2].value + " selected")
                 if(self.view.selectable_window[row_counter,2].value == "Custom Crops"):
@@ -269,9 +278,12 @@ class Controller(logging.Handler):
                 #print(self.model_type[-1])
             row_counter +=1
         row_counter = 0
-        for jobid,checkbox in self.view.shared_checkboxes.items():
+        for jobIndexStr,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
-                self.view.job_selection.append([jobid,DEFAULT_JOB_START_INDEX])
+                # gets the real job id for the chosen row index
+                jobid = self.view.selectable_window[int(jobIndexStr), 1].value 
+                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
+                self.view.job_selection.append([jobid,1])
                 if(self.view.shared_selectable_window[row_counter,2].value == "AllCrops"):
                     self.model_type.append(0)
                 else:
