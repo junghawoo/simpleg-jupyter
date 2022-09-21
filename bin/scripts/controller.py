@@ -254,21 +254,24 @@ class Controller(logging.Handler):
         #0 for all crops 1 for cornsoy
         self.view.job_selection = []
         row_counter = 0
+        SHARED_JOB = 0
+        PRIVATE_JOB =1
+        JOBID_COLUMN =1
         self.model_type = []
-        for jobIndexStr,checkbox in self.view.checkboxes.items():
+        for chkIndex,checkbox in self.view.checkboxes.items():
             #print(self.view.selectable_window[row_counter,2].value + " all")
             if(checkbox.value == True):
                 # gets the real job id for the chosen row index
-                # jobIndexStr is a string so it needs to be converted into integer for lookup
+                # chkIndex is a string so it needs to be converted into integer for lookup
                 #
                 # Jungha 
                 # The problem is that the job tables are not implemented using Model so 
                 # the mapping between visible index and the actual job id has to be done every time 
                 # a job is clicked.
                 
-                jobid = self.view.selectable_window[int(jobIndexStr), 1].value 
+                jobid = self.view.selectable_window[row_counter, JOBID_COLUMN].value 
                 # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
-                self.view.job_selection.append([jobid, 0])
+                self.view.job_selection.append([jobid, PRIVATE_JOB])
                 #print(self.view.selectable_window)
                 #print(self.view.selectable_window[row_counter,2].value + " selected")
                 if(self.view.selectable_window[row_counter,2].value == "Custom Crops"):
@@ -277,13 +280,14 @@ class Controller(logging.Handler):
                     self.model_type.append(1)
                 #print(self.model_type[-1])
             row_counter +=1
+            
         row_counter = 0
-        for jobIndexStr,checkbox in self.view.shared_checkboxes.items():
+        for chkIndex,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
                 # gets the real job id for the chosen row index
-                jobid = self.view.selectable_window[int(jobIndexStr), 1].value 
+                jobid = self.view.shared_selectable_window[row_counter, JOBID_COLUMN].value 
                 # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
-                self.view.job_selection.append([jobid,1])
+                self.view.job_selection.append([jobid, SHARED_JOB])
                 if(self.view.shared_selectable_window[row_counter,2].value == "AllCrops"):
                     self.model_type.append(0)
                 else:
@@ -448,7 +452,10 @@ class Controller(logging.Handler):
         content = self.view.view_vbox.children[0]
         self.view.view_vbox.children = tuple([content])
         self.jobs_selected("Garbage Value")
-            
+        
+        print('len of view.job_selection is: ', len(self.view.job_selection))
+        print( self.view.job_selection)
+        
         if(len(self.view.job_selection)!=1):
             self.view.instructions_label.value ="Select one model only for display, check shared jobs as well"
             return
