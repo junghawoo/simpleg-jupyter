@@ -62,8 +62,8 @@ class View:
         self.job_selection = []
         #When the user selects a job it populates these variables with the possible options
         self.dynamic_options = None
-       
-        
+
+
         #Create Tab
         self.model_dd = None
         self.name_tb = None
@@ -72,7 +72,7 @@ class View:
         self.upload_text = None
         self.upload_btn = None
         self.instructions_label_create = None
-        
+
         # Manage Tab
         self.instructions_label = None
         self.refresh_btn = None
@@ -82,8 +82,8 @@ class View:
         self.checkboxes = {}
         self.shared_selectable_window = None
         self.shared_checkboxes = {}
-        
-        # View Tab 
+
+        # View Tab
         self.job_display = []
         self.system_component = None
         self.spatial_resolution = None
@@ -104,7 +104,7 @@ class View:
         self.location_export_btn = None
         self.location_grid = None
         self.location_list_section = None
-        
+
         #About Tab
         self.allcrops_download = None
         self.cornsoy_download = None
@@ -148,21 +148,21 @@ class View:
         # Initialize plotter
         #self.ctrl.empty_plot()
     def testwidget(self):
-        freq_slider = ui.FloatSlider(value=2.,min=1.,max=10.0,step=0.1,description='Frequency:', readout_format='.1f',) 
-       
+        freq_slider = ui.FloatSlider(value=2.,min=1.,max=10.0,step=0.1,description='Frequency:', readout_format='.1f',)
+
         content = [section("test slider",[ui.VBox(children=[freq_slider])])]
         return ui.VBox(content)
-    
+
     def createTab(self):
-        
+
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
         self.instructions_label_create=ui.Label(value="Instructions: Upload the .cmf files here. Upload only one file. Look at the About Tab for cmf templates.")
         #Dropdown for the model Selction
-        self.model_dd=ui.Dropdown(options=self.MODEL_DROPDOWN_CREATETAB,value='-',description='Model:',disabled=False)  
+        self.model_dd=ui.Dropdown(options=self.MODEL_DROPDOWN_CREATETAB,value='-',description='Model:',disabled=False)
         #Name text Box
-        self.name_tb=ui.Text(value='model',placeholder='Name of the model',description='Name:',disabled=False)       
+        self.name_tb=ui.Text(value='model',placeholder='Name of the model',description='Name:',disabled=False)
         #Description Text Area
-        self.description_ta=ui.Textarea(value='Description',placeholder='Description',description='Description:',disabled=False)       
+        self.description_ta=ui.Textarea(value='Description',placeholder='Description',description='Description:',disabled=False)
         #Upload Button
         self.upload_text=ui.Label(value="Configuration File:")
         self.upload_btn=ui.FileUpload(
@@ -179,22 +179,22 @@ class View:
         createTab_widgets = ui.VBox(children=[self.instructions_label_create,self.model_dd,self.name_tb,self.description_ta,self.upload_row,self.submit_button],layout=box_layout)
         #createTab_widgets.align_items = 'center'
         content = [section("New Experiment",[ui.VBox(children=[createTab_widgets])])]
-        
+
         #Align things centrally
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='stretch',width='100%')
         contentvbox = ui.VBox(content,layout=box_layout)
         #contentvbox.layout.align_items = 'center'
         #self.test_btn=ui.Button(description='Test',icon='download')
         return contentvbox
-    
+
     def manageTab(self):
-        
+
         #Label with refresh and instructions
         self.instructions_label=ui.Label(value="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab")
         self.refresh_btn=ui.Button(description="Refresh",disabled=False)
         self.refresh_btn.style.button_color='gray'
         top_box=ui.HBox([self.refresh_btn,self.instructions_label])
-        
+
         #Temporary Database Access will be refreshed with a global variable and the callback function
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
@@ -204,8 +204,8 @@ class View:
         rows = cursor.fetchall()
         #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
-        
-        
+
+
         #check if job table is empty.
         if len(rows) > 0 :
             #For alignment finding the max length of each column
@@ -213,14 +213,14 @@ class View:
             for row in rows:
                 str_row = "".join(str(word).ljust(col_width) for word in row)
                 list_of_jobs.append(str_row)
-            
-            
+
+
         cursor.close()
         conn.close()
-        
-        
-        
-        #prepare header table 
+
+
+
+        #prepare header table
         self.comparetab_header = ui.GridspecLayout(1,11,height="auto")
         self.comparetab_header[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
         self.comparetab_header[0,1] = ui.HTML(value = f"<b><font color='#1167b1'>Job ID</b>")
@@ -228,18 +228,18 @@ class View:
         self.comparetab_header[0,3:5] = ui.HTML(value = f"<b><font color='#1167b1'>Job Name</b>" )
         self.comparetab_header[0,5:10] = ui.HTML(value = f"<b><font color='#1167b1'>Description</b>")
         self.comparetab_header[0,10] = ui.HTML(value = f"<b><font color='#1167b1'>Job Status</b>")
-        
-        
-        
+
+
+
         #Selectable multiple widget / Checkboxes for each
         self.checkboxes = {}
-        # to make sure at least one row will be displayed even when there is no job 
+        # to make sure at least one row will be displayed even when there is no job
         mininum_rows_to_display = max(1, len(rows))
         self.selectable_window = ui.GridspecLayout(mininum_rows_to_display,11,height="auto")
         row_counter = 0
         #Create a new dictionary key value pair for each jobid and checkbox
         # Jungha
-        # The assumption for the jobid is not correct. 
+        # The assumption for the jobid is not correct.
         # The jobid
         for row in rows:
             print(row)
@@ -251,9 +251,9 @@ class View:
             self.selectable_window[row_counter,5:10] = ui.HTML(row[7])
             self.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-            
+
         print(self.checkboxes)
-        
+
         #Display Compare Buttons
         self.display_btn=ui.Button(description="Display",disabled=False)
         self.display_btn.style.button_color='gray'
@@ -262,7 +262,7 @@ class View:
         self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
         self.selectable_window_vbox = ui.VBox(children=[self.comparetab_header, self.selectable_window])
         #Assign the grid layout to the Vbox and the content
-        self.selectable_window.options = list_of_jobs        
+        self.selectable_window.options = list_of_jobs
         #Shared Job Display
         try:
             dbfile = "/data/groups/simpleggroup/job/job.db"
@@ -273,21 +273,21 @@ class View:
             rows = cursor.fetchall()
         except:
             #Join the widgets
-            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box] 
+            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box]
             contentvbox = ui.VBox(content)
         else:
             #Storing the contents of the db in list_of_jobs
             list_of_jobs = []
-            
-            
+
+
             if len(rows) > 0:
                 #For alignment finding the max length of each column
                 col_width = max(len(str(word)) for row in rows for word in row) + 2  # padding
                 for row in rows:
                     str_row = "".join(str(word).ljust(col_width) for word in row)
                     list_of_jobs.append(str_row)
-                    
-            
+
+
             cursor.close()
             conn.close()
             self.shared_checkboxes = {}
@@ -304,16 +304,16 @@ class View:
                 self.shared_selectable_window[row_counter,5:10] = ui.HTML(row[8])
                 self.shared_selectable_window[row_counter,10] = ui.HTML(row[4])
                 row_counter = row_counter + 1
-            
+
             self.shared_selectable_window_vbox = ui.VBox(children=[self.comparetab_header, self.shared_selectable_window])
             #Assign the grid layout to the Vbox and the content
-            self.shared_selectable_window.options = list_of_jobs        
+            self.shared_selectable_window.options = list_of_jobs
             #Join the widgets
-            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),section("Shared Jobs",[self.shared_selectable_window_vbox]),self.bottom_box] 
+            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),section("Shared Jobs",[self.shared_selectable_window_vbox]),self.bottom_box]
             contentvbox = ui.VBox(content)
 
         return contentvbox
-    
+
     def viewTab(self):
         #Dropdown Menus Change if the Users makes a selection on the System Component Feature
         # Till there is a map on the View Tab there is no change to the dropdowns
@@ -321,52 +321,53 @@ class View:
         #It would also disable some dropdowns if it is of no use
         box_layout = ui.Layout(display='flex',flex_flow='column', align_items='center',width='80%')
         self.system_component=ui.Dropdown(options = ["-"],value = '-',description='System Component:',disabled=False,style=dict(description_width='initial'))
-        
+
         self.resolution=ui.Dropdown(options = ["-"],value = '-',description='Spatial Resolution:',disabled=False ,style=dict(description_width='initial'))
-        
+
         self.type_of_result=ui.Dropdown(options = ["-"],value = '-',description='Type of Result:',disabled=False ,style=dict(description_width='initial'))
-        
+
         self.result_to_view = ui.Dropdown(options = ["-"],value = '-',description='Result to View:',disabled=False,style=dict(description_width='initial'))
-        
+
         self.name_dd = ui.Dropdown(options = ["-"],value = '-',description='Model Selection:',disabled=False,style=dict(description_width='initial'))
-        
+
         self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
-        
+
         self.view_button_submit = ui.Button(description = 'SUBMIT')
         self.longname = ui.HTML(value="Long Name will be displayed here")
-        
+
         self.view_location_button = ui.Button(description = 'Refresh Location List')
-        
+
         content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button],layout=box_layout),self.longname])
-        
-        map_stuff_testing = '''map_wid = CustomMap("1200px","720px")
-        freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
-        mapbox=section("Map 1",[map_wid])
-        id_str = "1"
-        system_component="Production"
-        spatial_resolution = "Geospatial"
-        type_of_result = "PCT"
-        result_to_view = "irrigated"
-        filter_min = 0
-        filter_max = 100
 
-        variable_model = VariableModel(id_str, system_component, spatial_resolution, type_of_result,result_to_view, filter_min, filter_max)
+        # map_stuff_testing = ""
+        # map_wid = CustomMap("1200px","720px")
+        # freq_slider = ui.FloatSlider(value=0,min=0,max=100,step=0.1,description='Frequency:', readout_format='.1f',)
+        # mapbox=section("Map 1",[map_wid])
+        # id_str = "1"
+        # system_component="Production"
+        # spatial_resolution = "Geospatial"
+        # type_of_result = "PCT"
+        # result_to_view = "irrigated"
+        # filter_min = 0
+        # filter_max = 100
 
+        #variable_model = VariableModel(id_str, system_component, spatial_resolution, type_of_result,result_to_view, filter_min, filter_max)
+        #
+        #
+        # if variable_model.is_raster():
+        #         layer_util = RasterLayerUtil(variable_model)
+        #         layer = layer_util.create_layer()
+        #         map_wid.visualize_raster(layer, layer_util.processed_raster_path)
+        # elif variable_model.is_vector():
+        #         layer_util = VectorLayerUtil(variable_model)
+        #         layer = layer_util.create_layer()
 
-        if variable_model.is_raster():
-                layer_util = RasterLayerUtil(variable_model)
-                layer = layer_util.create_layer()
-                map_wid.visualize_raster(layer, layer_util.processed_raster_path)
-        elif variable_model.is_vector():
-                layer_util = VectorLayerUtil(variable_model)
-                layer = layer_util.create_layer()
-        '''
         self.location_export_btn = ui.Button(description="Export",disabled=False)
         self.location_export_btn.style.button_color='gray'
         self.view_button_submit.disabled = True
         self.view_vbox = ui.VBox(children=[content])
         return self.view_vbox
-    
+
     def download_button(self,buffer, filename: str, button_description: str):
 
         """Loads data from buffer into base64 payload embedded into a HTML button. Recommended for small files only.
@@ -395,20 +396,19 @@ class View:
         """
         return ui.HTML(html_button)
 
-    def aboutTab(self): 
+    def aboutTab(self):
         #Download Button for Custom CornSoy
         with open('SIMPLE_G_CornSoy.cmf', 'r') as f:
             file_content = f.read()
-    
+
         f = file_content
         self.cornsoy_download = self.download_button(bytes(f,"utf-8"), 'SIMPLE_G_CornSoy.cmf','SIMPLE_G_CornSoy Template')
-    
+
         with open('SIMPLE_G_AllCrops.cmf', 'r') as f:
             file_content = f.read()
-    
-        f = file_content 
+
+        f = file_content
         self.allcrops_download = self.download_button(bytes(f,"utf-8"), 'SIMPLE_G_AllCrops.cmf','SIMPLE_G_AllCrops Template')
-    
+
         content = [section("Downloads",[ui.VBox(children=[self.allcrops_download,self.cornsoy_download])])]
         return ui.VBox(content)
-    

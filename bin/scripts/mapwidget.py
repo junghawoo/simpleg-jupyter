@@ -67,37 +67,37 @@ class CustomMap(Map):
         self.add_control(ZoomControl(position="topleft"))
         self.add_control(FullScreenControl(position="topleft"))
         self.dc = DrawControl(position='topleft', marker={"shapeOptions": {"color": "#0000FF"}})
-        
+
         self.selected_markers=[]
-       
+
         #https://github.com/jupyter-widgets/ipyleaflet/blob/master/examples/DrawControl.ipynb
         #
         #https://notebook.community/rjleveque/binder_experiments/misc/ipyleaflet_polygon_selector
         def handle_draw(target, action, geo_json):
-            """Do something with the GeoJSON when it's drawn on the map"""    
+            """Do something with the GeoJSON when it's drawn on the map"""
             #print("action:", action)
 
             if action == 'created':
                 self.selected_markers.append(geo_json['geometry']['coordinates'])
                 #print("coordinates:", geo_json['geometry']['coordinates'])
-                
+
             elif action == 'deleted':
                 self.selected_markers.remove(geo_json['geometry']['coordinates'])
                 #print("removed coordinates:", geo_json['geometry']['coordinates'])
 
-            #returned coordinate is [longitude, latitude] which correspond to x and y of mercator projection 
+            #returned coordinate is [longitude, latitude] which correspond to x and y of mercator projection
             #print("selected_markers coordinates:", self.selected_markers)
             #print("dc.data", dc.data)
-            
+
         self.dc.on_draw(handle_draw)
 
         self.add_control(self.dc)
         self.add_control(LayersControl(position="topright"))
         self.add_control(WidgetControl(widget=self._value_area, position="bottomright"))
         self.on_interaction(self._mouse_event)
-    
+
             #print("dc.marker", dc.marker)
-            
+
     def link(self, map_):
         assert isinstance(map_, self.__class__)
         jslink((self, "zoom"), (map_, "zoom"))
@@ -122,7 +122,6 @@ class CustomMap(Map):
 
         # Get raster statistics
         stats = srcband.GetStatistics(True, True)
-        gtif = None
         self.add_layer(layer)
         self._gdal_layer = layer
         #print(stats[0],stats[1])
@@ -130,6 +129,7 @@ class CustomMap(Map):
         self._legend_bar.refresh(stats[0], stats[1])
         self.center = (39.5, -98.35)
         self.zoom = 4
+        gtif = None
 
     def _onclick_checkbox(self, widget, event, data):
         assert isinstance(widget, CustomCheckbox)
@@ -156,6 +156,7 @@ class CustomMap(Map):
             value = self._raster_service.value(latitude, longitude)
             value_text = "Value: -" if value is None else "Value: {}".format(value)
 
+        #print("coordinate change", coordinates_text, value_text)
         self._coordinates_text.children = coordinates_text
         self._value_text.children = value_text
 
@@ -167,6 +168,12 @@ class RasterService:
 
         driver = gdal.GetDriverByName('GTiff')
         dataset = gdal.Open(str(self._path))
+
+        if not dataset:
+            print("RasterService cannot open raster file. Please check the geotiff file")
+            return
+
+
         band = dataset.GetRasterBand(1)
 
         try:

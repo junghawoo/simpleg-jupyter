@@ -45,6 +45,7 @@ class SIMPLEUtil:
     PRIVATE_JOBS_DIR: Path = WORKING_DIR / "job"
     SHARED_JOBS_DIR: Path = shared_jobs_dir()
     SHARED_JOBS_SYM_LINK: Path = SHARED_JOBS_DIR  # For mygeohub's Jupyter. It needs a path relative to home
+    print("shared_jobs_dir", SHARED_JOBS_DIR,":")
 
     TEMP_DIR: Path = WORKING_DIR / "temp"  # To store temp directories for display/comparison "sessions"
     LOG_FILE: Path = TEMP_DIR / "simple-us.log"

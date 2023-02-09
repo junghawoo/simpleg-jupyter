@@ -24,7 +24,7 @@ import pandas as pd
 import geopandas as gpd
 from ipyleaflet import GeoData,Choropleth,Marker,GeoJSON
 import branca.colormap as cm
-import fiona 
+import fiona
 import numpy as np
 import json
 import branca.colormap as cm
@@ -55,7 +55,7 @@ class CombineLogFields(logging.Filter):
 class Controller(logging.Handler):
     VALUE = 'value'  # for observe calls
     map_widgets = []
-    
+
     def __init__(self, log_mode):  # 0=none 1=info 2=debug
 
         # TODO Remove testing code below
@@ -115,70 +115,70 @@ class Controller(logging.Handler):
         self.logger.debug('At')
 
         try:
-                        
+
             #Set up the database
             self.db_class_import = DBManager()
-            
-            
+
+
             # Set up user interface
             self.view.display(self.display_log)
             self.display_ready = True
-            
+
             # Connect UI widgets to callback methods ("cb_...").
             #   Methods listed below will be called when user activates widget.
             #   Format: <widget>.on_click/observe(<method_to_be_called>...)
-            
+
             #Manage Tab Display Button, single model display
             self.view.display_btn.on_click(self.cb_display_btn)
-            
+
             #View Tab Submit Button Display the model
             self.view.view_button_submit.on_click(self.cb_tif_display)
-            
+
             #View Tab If the system component dropdown changes
             #self.view.values_change[0]
             self.view.system_component.observe(self.cb_model_mapping)
-            
+
             #View Tab If the spatial resolution dropdown changes
             #self.view.values_change[1]
             self.view.resolution.observe(self.cb_model_mapping_name)
-            
+
             #View Tab If the model selection dropdown changes
             #self.view.values_change[2]
             self.view.name_dd.observe(self.cb_model_mapping_type)
-            
+
             #View Tab If the result to view dropdown changes
             #self.view.values_change[3]
             self.view.result_to_view.observe(self.cb_result_to_view)
-            
+
             #View Tab If the type of result dropdown changes
             #self.view.values_change[4]
             self.view.type_of_result.observe(self.cb_submit_button_enable)
-            
+
             #Manage Tab Compare Button, two jobs
             self.view.compare_btn.on_click(self.cb_compare_models)
-            
+
             #Manage Tab Refresh Button to refresh job list
             self.view.refresh_btn.on_click(self.refresh_manage_jobs_status)
-            
+
             #Create Tab Submit job to cluster
             self.view.submit_button.on_click(self.cb_upload_btn_create)
-            
+
             #Refresh location button view tab, get lat and longitude
             self.view.view_location_button.on_click(self.cb_marker_movement)
-            
+
             #Export the selected points
             self.view.location_export_btn.on_click(self.download_selected_points)
 
         except Exception:
             self.logger.error('EXCEPTION\n' + traceback.format_exc())
             raise
-            
+
     def cb_test(self, _):
         print(self.view.model_dd.value)
-     
+
     #Setting the system component options when the user selcts a job to display or compare
     def view_layer_options(self,_):
-       
+
         system_component = list(self.view.dynamic_options.keys())
         system_component.insert(0,"-")
         #Updating the options of the system component dropdown
@@ -194,7 +194,8 @@ class Controller(logging.Handler):
         self.view.name_dd.options = ["-"]
         self.view.name_dd.value =  self.view.name_dd.options[0]
         return
-    
+
+    # Job submit handler
     def cb_upload_btn_create(self, _):
         self.view.submit_button.disabled = True
         #Checking to see if the input is valid
@@ -206,8 +207,8 @@ class Controller(logging.Handler):
             return
         if self.view.model_dd.value == "-":
             return
-        
-        #Creating the sql entry 
+
+        #Creating the sql entry
         user = os.popen("whoami").read().rstrip('\n')
         job_id = self.db_class_import.createNewJob(self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"Processing",user,"0")
         file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
@@ -225,7 +226,7 @@ class Controller(logging.Handler):
             with open(file_location+'/SIMPLE_G_CornSoy.cmf', 'w') as f: f.write(content.decode("utf-8"))
             command = "SIMPLE_G_CornSoy.cmf"
             command_simple = "simpleg_us_corn"
-        #Run the submit tool    
+        #Run the submit tool
         submit = subprocess.run(["submit", "-v","--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
         # Path needs to be outputs not out
         get_id = submit.stdout.decode("utf-8")
@@ -235,16 +236,16 @@ class Controller(logging.Handler):
         remote_job_id = get_id[start:end]
         print("job_id {} remote_job_id:{}".format(job_id, remote_job_id))
         sys.stdout.flush()
-        
+
         self.db_class_import.updateRemoteID(job_id,remote_job_id)
         self.db_class_import.updateJobStatus(job_id,"Pending")
         self.refresh_manage_jobs("None")
         self.view.upload_btn.value.clear()
         self.view.upload_btn._counter = 0
         self.view.refresh_btn.disabled = False
-        self.view.submit_button.disabled = False 
-        return 
-    
+        self.view.submit_button.disabled = False
+        return
+
     def jobs_selected(self,_):
         #This will return a list of the job ids which are selected in the job_selection variable
         #Running a loop to check selected checkboxes for the box
@@ -264,13 +265,13 @@ class Controller(logging.Handler):
                 # gets the real job id for the chosen row index
                 # chkIndex is a string so it needs to be converted into integer for lookup
                 #
-                # Jungha 
-                # The problem is that the job tables are not implemented using Model so 
-                # the mapping between visible index and the actual job id has to be done every time 
+                # Jungha
+                # The problem is that the job tables are not implemented using Model so
+                # the mapping between visible index and the actual job id has to be done every time
                 # a job is clicked.
-                
-                jobid = self.view.selectable_window[row_counter, JOBID_COLUMN].value 
-                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
+
+                jobid = self.view.selectable_window[row_counter, JOBID_COLUMN].value
+                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops]
                 self.view.job_selection.append([jobid, PRIVATE_JOB])
                 #print(self.view.selectable_window)
                 #print(self.view.selectable_window[row_counter,2].value + " selected")
@@ -280,13 +281,13 @@ class Controller(logging.Handler):
                     self.model_type.append(1)
                 #print(self.model_type[-1])
             row_counter +=1
-            
+
         row_counter = 0
         for chkIndex,checkbox in self.view.shared_checkboxes.items():
             if(checkbox.value == True):
                 # gets the real job id for the chosen row index
-                jobid = self.view.shared_selectable_window[row_counter, JOBID_COLUMN].value 
-                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops] 
+                jobid = self.view.shared_selectable_window[row_counter, JOBID_COLUMN].value
+                # item format: [jobid, model type = 0 or 1, 0 is cornsoy, 1 is allcrops]
                 self.view.job_selection.append([jobid, SHARED_JOB])
                 if(self.view.shared_selectable_window[row_counter,2].value == "AllCrops"):
                     self.model_type.append(0)
@@ -296,11 +297,11 @@ class Controller(logging.Handler):
         #print(self.model_type)
         temp = self.model_type[0]
         self.model_type = temp
-        #print(self.model_type)        
+        #print(self.model_type)
 
         return
-    
-    
+
+
     def refresh_manage_jobs(self,_):
         self.view.selectable_window_vbox.children = []
         #Temporary Database Access will be refreshed with a global variable and the callback function
@@ -312,8 +313,8 @@ class Controller(logging.Handler):
         rows = cursor.fetchall()
         #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
-        
-        
+
+
         #check if job table is empty.
         if len(rows) > 0 :
             #For alignment finding the max length of each column
@@ -321,14 +322,14 @@ class Controller(logging.Handler):
             for row in rows:
                 str_row = "".join(str(word).ljust(col_width) for word in row)
                 list_of_jobs.append(str_row)
-                
-                
+
+
         cursor.close()
         conn.close()
-        
-        
-         
-        #prepare header table 
+
+
+
+        #prepare header table
         self.comparetab_header = ui.GridspecLayout(1,11,height="auto")
         self.comparetab_header[0,:1] = ui.HTML(value = f"<b><font color='#1167b1'>Select</b>")
         self.comparetab_header[0,1] = ui.HTML(value = f"<b><font color='#1167b1'>Job ID</b>")
@@ -336,13 +337,13 @@ class Controller(logging.Handler):
         self.comparetab_header[0,3:5] = ui.HTML(value = f"<b><font color='#1167b1'>Job Name</b>" )
         self.comparetab_header[0,5:10] = ui.HTML(value = f"<b><font color='#1167b1'>Description</b>")
         self.comparetab_header[0,10] = ui.HTML(value = f"<b><font color='#1167b1'>Job Status</b>")
-        
-        
+
+
         #Selectable multiple widget / Checkboxes for each
         self.view.checkboxes = {}
-        # to make sure at least one row will be displayed even when there is no job 
+        # to make sure at least one row will be displayed even when there is no job
         mininum_rows_to_display = max(1, len(rows))
-        
+
         self.view.selectable_window = ui.GridspecLayout(mininum_rows_to_display,11,height="auto")
         self.view.job_selection = []
         row_counter = 0
@@ -356,11 +357,11 @@ class Controller(logging.Handler):
             self.view.selectable_window[row_counter,5:10] = ui.HTML(row[7])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
-        
+
         self.view.selectable_window_vbox.children=[self.comparetab_header, self.view.selectable_window]
         return
-    
-    #Refresh the job list when the refresh button is clicked on the manage tab 
+
+    #Refresh the job list when the refresh button is clicked on the manage tab
     def refresh_manage_jobs_status(self,_):
         self.view.refresh_btn.disabled = True
         #Temporary Database Access will be refreshed with a global variable and the callback function
@@ -400,11 +401,11 @@ class Controller(logging.Handler):
                 if 'Running' in output:
                     self.db_class_import.updateJobStatus(job_id,"Running")
                     continue
-        self.refresh_manage_jobs("None")        
+        self.refresh_manage_jobs("None")
         self.view.refresh_btn.disabled = False
         return
-    
-    
+
+
     #Building the list of options for the view tab according to the job
     def buildResultList(self,folder):
             #The job is public or private depends on the input to the function, the input will a list of the format
@@ -444,7 +445,7 @@ class Controller(logging.Handler):
                 #print(k,v )
 
             return resultList
-        
+
     #Callback for the Manage Tab Display Button, this is for single job alone
     def cb_display_btn(self,_):
         self.view.system_component.value = self.view.system_component.options[0]
@@ -452,19 +453,19 @@ class Controller(logging.Handler):
         content = self.view.view_vbox.children[0]
         self.view.view_vbox.children = tuple([content])
         self.jobs_selected("Garbage Value")
-        
+
         print('len of view.job_selection is: ', len(self.view.job_selection))
         print( self.view.job_selection)
-        
+
         if(len(self.view.job_selection)!=1):
             self.view.instructions_label.value ="Select one model only for display, check shared jobs as well"
             return
-        else:    
+        else:
             self.view.instructions_label.value ="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab"
         #print(self.view.checkboxes)
         #print(self.view.checkboxes.keys())
         #Getting the options to fill the options in the View Tab
-        #This dynamic options variable will be used to fill the options of the 
+        #This dynamic options variable will be used to fill the options of the
         self.view.dynamic_options=self.buildResultList(self.view.job_selection[0])
         #print(self.view.dynamic_options)
         self.view_layer_options("Garbage")
@@ -479,8 +480,8 @@ class Controller(logging.Handler):
                 self.create_map_widget(job,0)
                 self.view.job_display.append([job,0])
                 break
-        return 
-    
+        return
+
     def create_map_widget(self,map_id,is_private):
         #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
@@ -516,7 +517,7 @@ class Controller(logging.Handler):
         temp_list.append(self.location_list_widget("Garbage Value"))
         self.view.view_vbox.children = tuple(temp_list)
         return
-    
+
     def cb_tif_display(self,_):
         #Check ram and cpu usage before display.
         #print('The CPU usage is: ', psutil.cpu_percent(4))
@@ -524,19 +525,19 @@ class Controller(logging.Handler):
         for i in range(1,len(self.view.view_vbox.children)):
             #Checking to see whether the Accordian has a single map or multiple maps
             if(len(self.view.view_vbox.children[i].children[0].children)>1):
-                try:  
+                try:
                     #print("Compare")
                     mapbox = self.view.view_vbox.children[i].children[0]
                     map_id = self.view.job_selection[0][0]
                     map_id_1 = self.view.job_selection[1][0]
-                    
+
                     self.variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
-                    
+
                     self.variable_model_1 = VariableModel(map_id_1,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[1][1])
-                    
+
                     map_wid = mapbox.children[0]
                     map_wid_1 =mapbox.children[1]
-                    if len(map_wid.layers) == 2: 
+                    if len(map_wid.layers) == 2:
                         map_wid.remove_layer(map_wid.layers[1])
                     if len(map_wid_1.layers) == 2:
                         map_wid_1.remove_layer(map_wid_1.layers[1])
@@ -548,34 +549,34 @@ class Controller(logging.Handler):
                     if len(map_wid_1.layers)==3:
                         map_wid_1.remove_layer(map_wid_1.layers[1])
                         map_wid_1.remove_layer(map_wid_1.layers[2])
-                        
+
                     if self.variable_model.is_raster():
                         layer_util = RasterLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
                         map_wid.visualize_raster(layer, layer_util.processed_raster_path)
                         self.layer_util = layer_util
-                    
+
                         layer_util = RasterLayerUtil(self.variable_model_1)
                         layer = layer_util.create_layer()
                         map_wid_1.visualize_raster(layer, layer_util.processed_raster_path)
                         self.layer_util_1 = layer_util
-                    
+
                     elif variable_model.is_vector():
                         layer_util = VectorLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
                         map_wid.add_layer(layer)
                         layer_util.create_legend(map_wid)
                         self.layer_util = None
-                        
+
                         layer_util = VectorLayerUtil(self.variable_model_1)
                         layer = layer_util.create_layer()
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
                         self.layer_util = None
 
-                    break     
+                    break
                 except Exception as e:
-                    #print(e)
+                    print(e)
                     self.view.longname.value = "This Comparison is not possible"
                     break
             #Below is single map processing
@@ -589,7 +590,7 @@ class Controller(logging.Handler):
                 if len(map_wid.layers) == 2:
                     #print("Deleting Layers")
                     map_wid.remove_layer(map_wid.layers[1])
-                #Delete marker layer as well    
+                #Delete marker layer as well
                 if len(map_wid.layers)==3:
                     map_wid.remove_layer(map_wid.layers[1])
                     map_wid.remove_layer(map_wid.layers[2])
@@ -605,7 +606,7 @@ class Controller(logging.Handler):
                     layer_util.create_legend(map_wid)
                     self.layer_util = None
                     self.layer_util_1 = None
-                
+
                 break
             except Exception as e:
                 print(e)
@@ -630,9 +631,9 @@ class Controller(logging.Handler):
         self.view.result_to_view.value =  self.view.result_to_view.options[0]
         self.view.name_dd.options = ["-"]
         self.view.name_dd.value =  self.view.name_dd.options[0]
-        return 
-    
-    #Spatial Resolution Changes 
+        return
+
+    #Spatial Resolution Changes
     def cb_model_mapping_name(self,_):
         self.view.type_of_result.value=self.view.type_of_result.options[0]
         self.view.view_button_submit.disabled = True
@@ -645,7 +646,7 @@ class Controller(logging.Handler):
         options = list(self.view.dynamic_options[self.view.system_component.value][self.view.resolution.value].keys())
         options.insert(0,"-")
         self.view.name_dd.options = options
-        self.view.name_dd.value =  self.view.name_dd.options[0]        
+        self.view.name_dd.value =  self.view.name_dd.options[0]
 
         #Remaining options will just be "-" and will be updated when the preceeding option changes
         self.view.result_to_view.options = ["-"]
@@ -662,8 +663,8 @@ class Controller(logging.Handler):
             path =  "/data/groups/simpleggroup/job/"+self.view.job_selection[0][0]+"/outputs/results"
         else:
             path = os.path.expanduser("~") + "/SimpleGTool/job/"+self.view.job_selection[0][0]+"/outputs/results"
-        
-        path = path + "/" + self.view.system_component.value + "/" + self.view.resolution.value + "/" + self.view.name_dd.value 
+
+        path = path + "/" + self.view.system_component.value + "/" + self.view.resolution.value + "/" + self.view.name_dd.value
         type_of_result = os.listdir(path)
         path = path + "/" + type_of_result[0]
         for file in os.listdir(path):
@@ -671,7 +672,7 @@ class Controller(logging.Handler):
                 results.append("Irrigated")
             if "rainfed" in file:
                 results.append("Rainfed")
-                
+
         return list(set(results))
     #If the name drop down changes
     def cb_model_mapping_type(self,_):
@@ -709,22 +710,22 @@ class Controller(logging.Handler):
         self.view.type_of_result.value=self.view.type_of_result.options[0]
         self.view.view_button_submit.disabled = True
         return
-    
-    
+
+
     def cb_submit_button_enable(self,_):
         self.view.view_button_submit.disabled = True
-       
+
         if(self.view.system_component.value=="-" or self.view.resolution.value=="-" or self.view.name_dd.value=="-" or self.view.type_of_result.value=="-"):
             self.view.view_button_submit.disabled = True
             return
-        
+
         if(self.view.result_to_view.disabled == False and self.view.result_to_view.value=="-"):
             self.view.view_button_submit.disabled = True
             return
-        
+
         self.view.view_button_submit.disabled = False
         return
-    
+
     def find_common(self,model1,model2):
         results = {}
         for system_component in model1.keys():
@@ -738,7 +739,7 @@ class Controller(logging.Handler):
                             continue
                         if model1[system_component][spatial_resolution][model] != model2[system_component][spatial_resolution][model]:
                             continue
-                        if system_component not in results.keys(): 
+                        if system_component not in results.keys():
                             results[system_component] = {spatial_resolution:{model:model1[system_component][spatial_resolution][model]}}
                         else:
                             if spatial_resolution not in results[system_component].keys():
@@ -746,7 +747,7 @@ class Controller(logging.Handler):
                             else:
                                 results[system_component][spatial_resolution][model] = model1[system_component][spatial_resolution][model]
         return results
-    
+
     def cb_compare_models(self,_):
         content = self.view.view_vbox.children[0]
         self.view.view_vbox.children = tuple([content])
@@ -769,7 +770,7 @@ class Controller(logging.Handler):
             self.view_layer_options("Garbage")
             self.create_map_widget_compare(self.view.job_selection)
         return
-    
+
     #Get the list of points selected.
     def list_of_points(self,_):
         # to make sure at least one row will be displayed even when there is no job
@@ -796,9 +797,9 @@ class Controller(logging.Handler):
                 self.view.location_grid[i+1,4:6] = ui.HTML(str(self.view.locations_list[i][2]))
         temp = ui.HBox([self.view.location_export_btn])
         self.view.location_list_section.children = tuple([ui.VBox([ui.VBox([self.view.location_grid,temp])])])
-        return 
-    
-    
+        return
+
+
     #Create an accordian section for the list of points
     def location_list_widget(self,_):
         #Generate the Grid for
@@ -856,7 +857,7 @@ class Controller(logging.Handler):
                     #print(path)
                     pts = [x[0] for x in src.sample(coords)]
                     #print(pts)
-                    
+
                     path = self.variable_model_1.file_path()
                     src = rasterio.open(str(path))
                     #print(src.sample(coords))
@@ -869,7 +870,7 @@ class Controller(logging.Handler):
                     map_wid = mapbox.children[0].children[0]
                     map_wid_1 = mapbox.children[0].children[1]
                     #print(pts)
-                    
+
                     #print("1st Map")
                     #print(pts)
                     #print("2nd Map")
@@ -882,7 +883,7 @@ class Controller(logging.Handler):
                 #print("CONTROLS")
                 #print(map_wid.controls)
                 return
-            
+
     def download_selected_points(self,_):
         #Headers
         header = ['Public/Private','Path','Longitude', 'Latitude', 'Value']
@@ -920,14 +921,12 @@ class Controller(logging.Handler):
                     #print(path)
                     pts = [x[0] for x in src.sample(coords_temp)]
                     temp_data.append([public_private,file,self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],pts[0]])
-                                         
+
         name = os.path.expanduser("~") + "/SimpleGTool/data.csv"
-        with open(name, 'w', encoding='UTF8', newline='') as f: 
+        with open(name, 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
             # write the header
             writer.writerow(header)
             # write multiple rows
             writer.writerows(temp_data)
         print("File exported to "+name)
-        
-            
