@@ -9,6 +9,7 @@ import os
 from scripts.layerservice import RasterLayerUtil
 from model.variableutil import VariableModel
 from scripts.DBManager import *
+from utils import SIMPLEUtil
 import base64
 
 def section(title, contents):
@@ -109,6 +110,9 @@ class View:
         self.allcrops_download = None
         self.cornsoy_download = None
         #################################
+        
+        #Want to create some working directories for viewing maps
+        SIMPLEUtil.initialize_working_directory()
 
     def intro(self, model, ctrl):
         """Introduce MVC modules to each other"""
