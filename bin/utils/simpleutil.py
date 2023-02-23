@@ -30,6 +30,8 @@ def base_url() -> str:
         url += nb + "tree"
     else:
         url = "http://localhost:8888/tree"
+        
+    print("base_url", url,":")
     return url
 
 
@@ -42,11 +44,11 @@ def shared_jobs_dir() -> Path:
 
 class SIMPLEUtil:
     WORKING_DIR: Path = Path.home() / "SimpleGTool"
+    print("WORKING_DIR", WORKING_DIR,":")
     PRIVATE_JOBS_DIR: Path = WORKING_DIR / "job"
     SHARED_JOBS_DIR: Path = shared_jobs_dir()
     SHARED_JOBS_SYM_LINK: Path = SHARED_JOBS_DIR  # For mygeohub's Jupyter. It needs a path relative to home
     #print("shared_jobs_dir", SHARED_JOBS_DIR,":")
-
     TEMP_DIR: Path = WORKING_DIR / "temp"  # To store temp directories for display/comparison "sessions"
     LOG_FILE: Path = TEMP_DIR / "simple-us.log"
     BASE_URL = base_url()  # For Jupyter server. It is assumed the server is started from the home directory
@@ -55,14 +57,20 @@ class SIMPLEUtil:
 
     # TODO: Update this because the project structure has changed
     APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    print("APP_DIR", APP_DIR)
     SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
+    print("SRC_DIR", SRC_DIR)
     DATA_DIR = SRC_DIR + "/data"
     CORNSOY_SUPP_DIR = SRC_DIR + "/inputs/CornSoy/supp_files"
 
+    WORKING_DIR_SYM_LINK: Path = Path(APP_DIR) / "SimpleGTool" 
+    print("WORKING_DIR_SYM_LINK", WORKING_DIR_SYM_LINK)
+    
     @classmethod
     def initialize_working_directory(cls):
         if cls.TEMP_DIR.exists():
-            shutil.rmtree(str(cls.TEMP_DIR))
+            # delete even when the directory is not empty
+            shutil.rmtree(str(cls.TEMP_DIR), ignore_errors=True)
         if not cls.WORKING_DIR.exists():
             cls.WORKING_DIR.mkdir(parents=True)
         if not cls.PRIVATE_JOBS_DIR.exists():
@@ -72,14 +80,20 @@ class SIMPLEUtil:
         if not cls.LOG_FILE.exists():
             cls.LOG_FILE.touch()
             print('create log')
-        if cls.SHARED_JOBS_DIR.exists() and not cls.SHARED_JOBS_SYM_LINK.exists():
-            symlink(str(cls.SHARED_JOBS_DIR), str(cls.SHARED_JOBS_SYM_LINK))
+        #if cls.SHARED_JOBS_DIR.exists() and not cls.SHARED_JOBS_SYM_LINK.exists():
+        #    print("trying to create a symlink", cls.SHARED_JOBS_DIR,":")
+        #    symlink(str(cls.SHARED_JOBS_DIR), str(cls.SHARED_JOBS_SYM_LINK))
+        if not cls.WORKING_DIR_SYM_LINK.exists():
+            symlink(str(cls.WORKING_DIR), str(cls.WORKING_DIR_SYM_LINK))
+            print("symlink to SimpleGTool is created under bin")
         if sys.stdout != sys.__stdout__:
             sys.stdout.close()
 
-        sys.stdout = open(str(cls.LOG_FILE), "a+")
-        sys.stderr = sys.stdout
-        print("hello")
+        # Jungha 
+        # Enable this later if you want to write log to a file
+        #sys.stdout = open(str(cls.LOG_FILE), "a+")
+        #sys.stderr = sys.stdout
+        #print("hello")
 
     @classmethod
     def upload_file(cls, save_path: Path):
