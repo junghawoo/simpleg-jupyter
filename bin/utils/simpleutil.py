@@ -44,7 +44,6 @@ def shared_jobs_dir() -> Path:
 
 class SIMPLEUtil:
     WORKING_DIR: Path = Path.home() / "SimpleGTool"
-    print("WORKING_DIR", WORKING_DIR,":")
     PRIVATE_JOBS_DIR: Path = WORKING_DIR / "job"
     SHARED_JOBS_DIR: Path = shared_jobs_dir()
     SHARED_JOBS_SYM_LINK: Path = SHARED_JOBS_DIR  # For mygeohub's Jupyter. It needs a path relative to home
@@ -55,6 +54,7 @@ class SIMPLEUtil:
     PRIVATE_JOBS_URL = BASE_URL + "/SimpleGTool/job"
     SHARED_JOBS_URL = BASE_URL + "/SimpleGTool/job"
 
+    print("WORKING_DIR", WORKING_DIR)
     # TODO: Update this because the project structure has changed
     APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     print("APP_DIR", APP_DIR)
@@ -91,9 +91,9 @@ class SIMPLEUtil:
 
         # Jungha 
         # Enable this later if you want to write log to a file
-        #sys.stdout = open(str(cls.LOG_FILE), "a+")
-        #sys.stderr = sys.stdout
-        #print("hello")
+        sys.stdout = open(str(cls.LOG_FILE), "a+")
+        sys.stderr = sys.stdout
+        print("hello")
 
     @classmethod
     def upload_file(cls, save_path: Path):

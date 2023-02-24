@@ -203,11 +203,24 @@ class View:
         dbfile =os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/DatabaseFile(DONOTDELETE).db"
         conn = sqlite3.connect(dbfile)
         cursor = conn.cursor()
-        #Database is always created first so the next statement should not give an error
-        cursor.execute("SELECT * FROM SIMPLEJobs")
-        rows = cursor.fetchall()
-        #Storing the contents of the db in list_of_jobs
-        list_of_jobs = []
+        
+        try:
+            #Database is always created first so the next statement should not give an error
+            cursor.execute("SELECT * FROM SIMPLEJobs")
+            rows = cursor.fetchall()
+            print(rows)
+            print("len of rows", len(rows))
+            #Storing the contents of the db in list_of_jobs
+            list_of_jobs = []
+        except sqlite3.Error as er:
+            print('SQLite error: %s' % (' '.join(er.args)))
+            print("Exception class is: ", er.__class__)
+            print('SQLite traceback: ')
+            exc_type, exc_value, exc_tb = sys.exc_info()
+            print(traceback.format_exception(exc_type, exc_value, exc_tb))
+            
+        conn.close()
+    
 
 
         #check if job table is empty.
@@ -217,10 +230,6 @@ class View:
             for row in rows:
                 str_row = "".join(str(word).ljust(col_width) for word in row)
                 list_of_jobs.append(str_row)
-
-
-        cursor.close()
-        conn.close()
 
 
 
