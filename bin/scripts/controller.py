@@ -483,6 +483,9 @@ class Controller(logging.Handler):
         return
 
     def create_map_widget(self,map_id,is_private):
+        # Act as if the user click the ViewTab to see a map
+        self.view.tabs.selected_index = 2 
+        
         #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
         map_wid = CustomMap("1200px","720px")
@@ -496,11 +499,16 @@ class Controller(logging.Handler):
         self.view.view_vbox.children = tuple(temp_list)
         return
     def create_map_widget_compare(self,map_id):
+        # Act as if the user click the ViewTab to compare two maps
+        self.view.tabs.selected_index = 2 
+        
          #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
         map_wid = CustomMap("600px","720px")
         map_wid_1 = CustomMap("600px","720px")
+        # link two maps only after both are loaded to canvas
         map_wid.link(map_wid_1)
+    
         if map_id[0][1] == 1:
             map_1 = "Private JobID "+str(map_id[0][0])
         else:
@@ -510,8 +518,11 @@ class Controller(logging.Handler):
         else:
             map_2 = "Public JobID "+str(map_id[1][0])
         mapbox=section_horizontal("Map: "+map_1+" and "+map_2,[map_wid,map_wid_1])
-        mapbox.children[0].children[0].layout= ui.Layout(border='solid',width="600px",height="720px")
-        mapbox.children[0].children[1].layout= ui.Layout(border='solid',width="600px",height="720px")
+        mapbox.children[0].children[0].layout= ui.Layout(border='solid',width="50%",height="720px")
+        mapbox.children[0].children[1].layout= ui.Layout(border='solid',width="50%",height="720px")
+        # original 
+        #mapbox.children[0].children[0].layout= ui.Layout(border='solid',width="600px",height="720px")
+        #mapbox.children[0].children[1].layout= ui.Layout(border='solid',width="600px",height="720px")
         temp_list = list(self.view.view_vbox.children)
         temp_list.append(mapbox)
         temp_list.append(self.location_list_widget("Garbage Value"))
@@ -524,6 +535,7 @@ class Controller(logging.Handler):
         #print('RAM memory % used:', psutil.virtual_memory()[2])
         for i in range(1,len(self.view.view_vbox.children)):
             #Checking to see whether the Accordian has a single map or multiple maps
+            # This assumes only one child of the view_vbox has two maps in the HBox 
             if(len(self.view.view_vbox.children[i].children[0].children)>1):
                 try:
                     #print("Compare")
@@ -537,6 +549,16 @@ class Controller(logging.Handler):
 
                     map_wid = mapbox.children[0]
                     map_wid_1 =mapbox.children[1]
+                   
+                    # debugging to understand layers of a map
+                    #print('map_wid There are', len(map_wid.layers), 'layers')
+                    #for i in range(0, len(map_wid.layers)):
+                    #    print('layer',i, map_wid.layers[i].name)
+        
+                    #print('map_wid_1 There are', len(map_wid_1.layers), 'layers')
+                    #for i in range(0, len(map_wid_1.layers)):
+                    #    print('layer',i, map_wid_1.layers[i].name)
+                        
                     if len(map_wid.layers) == 2:
                         map_wid.remove_layer(map_wid.layers[1])
                     if len(map_wid_1.layers) == 2:
@@ -556,10 +578,10 @@ class Controller(logging.Handler):
                         map_wid.visualize_raster(layer, layer_util.processed_raster_path)
                         self.layer_util = layer_util
 
-                        layer_util = RasterLayerUtil(self.variable_model_1)
-                        layer = layer_util.create_layer()
-                        map_wid_1.visualize_raster(layer, layer_util.processed_raster_path)
-                        self.layer_util_1 = layer_util
+                        layer_util2 = RasterLayerUtil(self.variable_model_1)
+                        layer2 = layer_util2.create_layer()
+                        map_wid_1.visualize_raster(layer2, layer_util2.processed_raster_path)
+                        self.layer_util_1 = layer_util2
 
                     elif variable_model.is_vector():
                         layer_util = VectorLayerUtil(self.variable_model)
@@ -574,12 +596,15 @@ class Controller(logging.Handler):
                         layer_util.create_legend(map_wid_1)
                         self.layer_util = None
 
+                    
                     break
                 except Exception as e:
                     print(e)
                     self.view.longname.value = "This Comparison is not possible"
                     break
             #Below is single map processing
+            #It assumes there is only one base map. 
+            #So if you add multiple base maps, fix this 'single map' checking condition
             try:
                 mapbox = self.view.view_vbox.children[i]
                 map_id = self.view.job_selection[0][0]
@@ -611,6 +636,7 @@ class Controller(logging.Handler):
             except Exception as e:
                 print(e)
                 self.view.longname.value = "This file does not exist"
+        
         return
     #System Component dropdown changes
     def cb_model_mapping(self,_):

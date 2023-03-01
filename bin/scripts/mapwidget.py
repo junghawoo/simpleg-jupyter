@@ -11,7 +11,7 @@ from IPython.core.display import display
 from ipyleaflet import DrawControl, TileLayer
 from ipyleaflet import FullScreenControl
 from ipyleaflet import LayersControl
-from ipyleaflet import Map
+from ipyleaflet import Map, basemaps
 from ipyleaflet import ScaleControl
 from ipyleaflet import SearchControl
 from ipyleaflet import WidgetControl
@@ -28,7 +28,7 @@ gdal.UseExceptions()
 
 class CustomMap(Map):
     def __init__(self, width: str, height: str):
-        super().__init__(scroll_wheel_zoom=True, zoom_control=False,world_copy_jump = True)
+        super().__init__(scroll_wheel_zoom=True, zoom_control=False,world_copy_jump = True, basemap=basemaps.OpenStreetMap.Mapnik)
         self.layout = Layout(width=width, height=height, margin="8px 0px 0px 0px")
         self.center = (39.5, -98.35)
         self.zoom = 4
@@ -61,7 +61,7 @@ class CustomMap(Map):
                             }
                             )
         self._value_area = VBox(children=[self._coordinates_text, self._value_text, wrapper],
-                                layout=Layout(min_width="174px", height="55px", padding="4px 4px 4px 4px"))
+                                layout=Layout(min_width="174px", height="100px", padding="4px 4px 4px 4px"))
 
         self.add_control(WidgetControl(widget=self._legend_bar, position="bottomleft"))
         self.add_control(ZoomControl(position="topleft"))
@@ -113,10 +113,11 @@ class CustomMap(Map):
         self.center = (39.5, -98.35)
         self.zoom = 4
 
+    # Note this funciton adds a new raster layer to the map 
     def visualize_raster(self, layer: TileLayer, raster_path: Path):
         """ The raster path should have been processed and filtered, if needed. """
 
-        #self._raster_service = RasterService(raster_path)
+        self._raster_service = RasterService(raster_path)
         gtif = gdal.Open(str(raster_path))
         srcband = gtif.GetRasterBand(1)
 
@@ -143,13 +144,18 @@ class CustomMap(Map):
         coordinates = kwargs.get('coordinates')
         latitude = float(coordinates[0])
         longitude = float(coordinates[1])
-
+        
+        #print("clicked lat:", latitude, " longitude:", longitude)
         self._update_value(latitude, longitude)
+       
         if self._linked_map:
             self._linked_map._update_value(latitude, longitude)
 
     def _update_value(self, latitude: float, longitude: float):
         coordinates_text = 'Coordinates:  ({:.4f},{:.4f})'.format(latitude, longitude)
+        
+        #print("coordinates_text:", coordinates_text)
+        
         if self._raster_service is None:
             value_text = "Value: -"
         else:
@@ -157,9 +163,9 @@ class CustomMap(Map):
             value_text = "Value: -" if value is None else "Value: {}".format(value)
 
         #print("coordinate change", coordinates_text, value_text)
-        self._coordinates_text.children = coordinates_text
-        self._value_text.children = value_text
 
+        self._coordinates_text.value = coordinates_text
+        self._value_text.value = value_text
 
 class RasterService:
     def __init__(self, raster_path: Path):
@@ -196,6 +202,7 @@ class RasterService:
         self._data = band.ReadAsArray(0, 0, cols, rows)
         dataset = None  # Close the dataset - https://gdal.org/tutorials/raster_api_tut.html
 
+    # getting value does not open the dataset multiple times as it is cached in the _data 
     def value(self, latitude: float, longitude: float) -> Optional[float]:
         if (longitude < self._x_origin) or (longitude > self._x_end):
             return None

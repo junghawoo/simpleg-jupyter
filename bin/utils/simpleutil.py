@@ -31,7 +31,7 @@ def base_url() -> str:
     else:
         url = "http://localhost:8888/tree"
         
-    print("base_url", url,":")
+    #print("base_url", url,":")
     return url
 
 
@@ -54,17 +54,17 @@ class SIMPLEUtil:
     PRIVATE_JOBS_URL = BASE_URL + "/SimpleGTool/job"
     SHARED_JOBS_URL = BASE_URL + "/SimpleGTool/job"
 
-    print("WORKING_DIR", WORKING_DIR)
+    #print("WORKING_DIR", WORKING_DIR)
     # TODO: Update this because the project structure has changed
     APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    print("APP_DIR", APP_DIR)
+    #print("APP_DIR", APP_DIR)
     SRC_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir))
-    print("SRC_DIR", SRC_DIR)
+    #print("SRC_DIR", SRC_DIR)
     DATA_DIR = SRC_DIR + "/data"
     CORNSOY_SUPP_DIR = SRC_DIR + "/inputs/CornSoy/supp_files"
 
     WORKING_DIR_SYM_LINK: Path = Path(APP_DIR) / "SimpleGTool" 
-    print("WORKING_DIR_SYM_LINK", WORKING_DIR_SYM_LINK)
+    #print("WORKING_DIR_SYM_LINK", WORKING_DIR_SYM_LINK)
     
     @classmethod
     def initialize_working_directory(cls):
@@ -90,10 +90,10 @@ class SIMPLEUtil:
             sys.stdout.close()
 
         # Jungha 
-        # Enable this later if you want to write log to a file
+        # Enabled this if you want to write log to a file
         sys.stdout = open(str(cls.LOG_FILE), "a+")
         sys.stderr = sys.stdout
-        print("hello")
+        #print("hello")
 
     @classmethod
     def upload_file(cls, save_path: Path):
