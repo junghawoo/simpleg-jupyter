@@ -1,0 +1,10 @@
+# Ignore ipython notebook temporary files 
+.ipynb_checkpoints
+
+.submit.log
+
+
+# Ignore symbolic link to user's job directory
+SimpleGTool
+
+

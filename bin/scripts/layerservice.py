@@ -11,7 +11,11 @@ from osgeo.gdal import DEMProcessingOptions
 
 # from lib.gdal2tiles import gdal2tiles
 from gdalscripts import gdal_calc
-from gdalscripts import gdal2tiles
+# testing if gdal2tiles package solves crash issue
+# local gdal2tiles -> package gdal2tiles
+#from gdalscripts import gdal2tiles
+import gdal2tiles
+
 from gdalscripts import gdal_edit
 from model.variableutil import VariableModel
 from utils import SIMPLEUtil
@@ -221,8 +225,15 @@ class RasterLayerUtil:
         # It will take longer but more reliable
         # Removed the -e to make sure new temp files and processing is done again
         #print(str(self._colorized_tif_path))
-        gdal2tiles.run(["-z", "0-8", "-a", "0, 0, 0", "--processes=2", str(self._colorized_tif_path), str(self._tile_folder_path)])
-        #gdal2tiles.run(["gdal2tiles.py","-l","-p","raster","-z", "0-8","-w","none",str(self._colorized_tif_path), str(self._tile_folder_path)])
+        #
+        # use local gdal2tiles.py 
+        #gdal2tiles.run(["-z", "0-8", "-a", "0, 0, 0", "--processes=2", str(self._colorized_tif_path), str(self._tile_folder_path)])
+        
+        
+        # use gdal2tiles package
+        # this will use a single thread. Will test multithreads later
+        gdal2tiles.generate_tiles(  str(self._colorized_tif_path), str(self._tile_folder_path), nb_processes=1, zoom='1-8',verbose=False)
+        
         return True
 
     def _remove_temp_files(self) -> bool:
