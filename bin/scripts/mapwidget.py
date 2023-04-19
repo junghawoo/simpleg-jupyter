@@ -67,6 +67,10 @@ class CustomMap(Map):
         self.add_control(ZoomControl(position="topleft"))
         self.add_control(FullScreenControl(position="topleft"))
         self.dc = DrawControl(position='topleft', marker={"shapeOptions": {"color": "#0000FF"}})
+        #We don't want Users to use polygon, polyline, and circlemarker from the control
+        self.dc.polyline={}
+        self.dc.polygon={}
+        self.dc.circlemarker={}
 
         self.selected_markers=[]
 
