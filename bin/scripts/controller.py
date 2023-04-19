@@ -161,7 +161,7 @@ class Controller(logging.Handler):
             self.view.refresh_btn.on_click(self.refresh_manage_jobs_status)
 
             #Create Tab Submit job to cluster
-            self.view.submit_button.on_click(self.cb_upload_btn_create)
+            self.view.submit_button.on_click(self.cb_job_create)
 
             #Refresh location button view tab, get lat and longitude
             self.view.view_location_button.on_click(self.cb_marker_movement)
@@ -196,13 +196,14 @@ class Controller(logging.Handler):
         return
 
     # Job submit handler
-    def cb_upload_btn_create(self, _):
+    def cb_job_create(self, _):
         self.view.submit_button.disabled = True
         #Checking to see if the input is valid
         myupload = self.view.upload_btn.value
         #print(myupload)
         uploaded_filename = list(myupload.keys())[0]
         content = myupload[uploaded_filename]['content']
+        
         if uploaded_filename[-4:] != ".cmf":
             return
         if self.view.model_dd.value == "-":
@@ -382,16 +383,12 @@ class Controller(logging.Handler):
             #Jungha Woo
             #We will use submitId for remote job id. Remote job id field will be deleted later.
             remote_job_id = row[1]
+            print("whats in row:", row)
             if row[4] in ['Pending', 'Queued', 'Running']:
                 submit = subprocess.run(["submit", "--status" ,str(remote_job_id) ], capture_output=True)
                 output = submit.stdout.decode("utf-8")
-                if len(output) < 5 or 'Completing' in output:
-                    file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id) + "/out"
-                    if os.path.isdir(file_location):
-                        self.db_class_import.updateJobStatus(job_id,"Completed")
-                        file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
-                        os.rename(file_location+"/out",file_location+"/outputs")
-                    continue
+                print("submit status output:", output, "len:", len(output))
+                
                 if 'Registered' in output or 'Submitted' in output:
                     self.db_class_import.updateJobStatus(job_id,"Pending")
                     continue
@@ -401,6 +398,19 @@ class Controller(logging.Handler):
                 if 'Running' in output:
                     self.db_class_import.updateJobStatus(job_id,"Running")
                     continue
+                #Previously, if no such job exists in the queue, it seemed to return nothing
+                #So length of the output is less than 5, it is regarded as already finished job.
+                #However, now it returns the following string for nonexisting job
+                #"submit status output: RunName     submitRun  Instance                Status  Location"
+                #Therefore length checking for the job status string is removed.
+                #if len(output) < 5 or 'Completing' in output:
+                file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id) + "/out"
+                if os.path.isdir(file_location):
+                   self.db_class_import.updateJobStatus(job_id,"Completed")
+                   file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
+                   os.rename(file_location+"/out",file_location+"/outputs")
+                continue
+                    
         self.refresh_manage_jobs("None")
         self.view.refresh_btn.disabled = False
         return

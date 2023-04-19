@@ -32,7 +32,7 @@ def section_horizontal(title,contents):
     ret.set_title(0, title)
     return ret
 class View:
-    TAB_TITLES = ['Create', 'Manage', 'View', 'About']
+    TAB_TITLES = ['Create', 'Manage', 'Visualize', 'About']
     MODEL_DROPDOWN_CREATETAB = ['-','Custom Crops','Custom CornSoy']
     SECTION_TITLE = 'Data'
     DATA_SOURCE_TITLE = 'Source'
@@ -173,11 +173,26 @@ class View:
             accept='.cmf',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
             multiple=False  # True to accept multiple files upload else False
         )
-        self.upload_btn.style.button_color = 'gray'
-        self.upload_row=ui.HBox([self.upload_text,self.upload_btn])
+        
+        self.selected_filename_label =ui.Label(value="")
+        
+        #this is to update filename label to chosen filename
+        def on_upload_change(change):
+            #extract filename 
+            myupload = self.upload_btn.value
+            uploaded_filename = list(myupload.keys())[0]
+            self.selected_filename_label.value = uploaded_filename
+            self.upload_btn._counter=1     
+
+        
+        self.upload_btn.observe(on_upload_change, names='value')
+       
+        #Any HTML color names are accepted
+        self.upload_btn.style.button_color = 'PaleTurquoise'
+        self.upload_row=ui.HBox([self.upload_text,self.upload_btn, self.selected_filename_label])
         #Submit Button
         self.submit_button=ui.Button(description='SUBMIT')
-        self.submit_button.style.button_color = 'gray'
+        self.submit_button.style.button_color = 'YellowGreen'
         #submit_button.layout = ui.Layout(width="50%")
         #Creating a VBox with the individual widgets
         createTab_widgets = ui.VBox(children=[self.instructions_label_create,self.model_dd,self.name_tb,self.description_ta,self.upload_row,self.submit_button],layout=box_layout)
@@ -196,7 +211,7 @@ class View:
         #Label with refresh and instructions
         self.instructions_label=ui.Label(value="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab")
         self.refresh_btn=ui.Button(description="Refresh",disabled=False)
-        self.refresh_btn.style.button_color='gray'
+        self.refresh_btn.style.button_color='PaleTurquoise'
         top_box=ui.HBox([self.refresh_btn,self.instructions_label])
 
         #Temporary Database Access will be refreshed with a global variable and the callback function
@@ -268,10 +283,11 @@ class View:
         print(self.checkboxes)
 
         #Display Compare Buttons
-        self.display_btn=ui.Button(description="Display",disabled=False)
-        self.display_btn.style.button_color='gray'
+        #Display a Map button changed to Visualize (a map)
+        self.display_btn=ui.Button(description="Visualize",disabled=False)
+        self.display_btn.style.button_color='PaleTurquoise'
         self.compare_btn=ui.Button(description="Compare",disabled=False)
-        self.compare_btn.style.button_color='gray'
+        self.compare_btn.style.button_color='YellowGreen'
         self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
         self.selectable_window_vbox = ui.VBox(children=[self.comparetab_header, self.selectable_window])
         #Assign the grid layout to the Vbox and the content
@@ -322,7 +338,10 @@ class View:
             #Assign the grid layout to the Vbox and the content
             self.shared_selectable_window.options = list_of_jobs
             #Join the widgets
-            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),section("Shared Jobs",[self.shared_selectable_window_vbox]),self.bottom_box]
+            sharedjob_accordian = section("Shared Jobs",[self.shared_selectable_window_vbox])
+            sharedjob_accordian.selected_index= None # to collapse by default 
+            
+            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),sharedjob_accordian,self.bottom_box]
             contentvbox = ui.VBox(content)
 
         return contentvbox
@@ -345,8 +364,9 @@ class View:
 
         self.min_max_slider = ui.IntRangeSlider(value=[0,100],min=0,max=100,step=1,description="Range of display",disabled = False, continuous_update=False,orientation = 'horizontal', readout =True, readout_format='d',style=dict(description_width='initial'))
 
-        self.view_button_submit = ui.Button(description = 'SUBMIT')
-        self.longname = ui.HTML(value="Long Name will be displayed here")
+        self.view_button_submit = ui.Button(description = 'View')
+        self.view_button_submit.style.button_color='YellowGreen'
+        self.longname = ui.HTML(value="           ")
 
         self.view_location_button = ui.Button(description = 'Refresh Location List')
 
