@@ -6,5 +6,6 @@
 
 # Ignore symbolic link to user's job directory
 SimpleGTool
+SHARED_JOBS
 
 
