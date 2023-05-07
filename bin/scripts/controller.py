@@ -5,6 +5,7 @@ import time
 import traceback
 import warnings  # Avoids warning: "numpy.dtype size changed, may indicate binary incompatibility"
 from matplotlib import pyplot as plt
+import shutil
 from IPython.core.display import display, clear_output
 import sqlite3
 import os
@@ -18,6 +19,7 @@ from scripts.DBManager import *
 #from JobManager.py import *
 from IPython.display import clear_output
 from IPython.display import HTML
+from IPython.display import FileLink
 from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
 import pandas as pd
@@ -35,6 +37,8 @@ from scripts.SIMPLEUtil import SIMPLEUtil
 import psutil
 import rasterio
 import csv
+from shutil import make_archive
+
 
 
 warnings.filterwarnings('ignore')  # TODO Confirm still needed?
@@ -131,6 +135,9 @@ class Controller(logging.Handler):
             #Manage Tab Display Button, single model display
             self.view.display_btn.on_click(self.cb_display_btn)
 
+            #Manage Tab Job download Button, single model display
+            self.view.job_download_btn.on_click(self.cb_job_download_btn)
+            
             #View Tab Submit Button Display the model
             self.view.view_button_submit.on_click(self.cb_tif_display)
 
@@ -491,7 +498,54 @@ class Controller(logging.Handler):
                 self.view.job_display.append([job,0])
                 break
         return
+   
+    #
+    def make_my_archive(self, source, destination):
+        #http://www.seanbehan.com/how-to-use-python-shutil-make_archive-to-zip-up-a-directory-recursively-including-the-root-folder/
+        base = os.path.basename(destination)
+        name = base.split('.')[0]
+        format = base.split('.')[1]
+        archive_from = os.path.dirname(source)
+        archive_to = os.path.basename(source.strip(os.sep))
+        print(source, destination, archive_from, archive_to)
+        
+        filepath = '%s.%s'%(name,format)
+        print("filepath:", filepath)
+        
+        if os.path.exists(destination):
+            print('Zip file already exists. Do nothing')
+            return
+        else:
+            print('Zip file does not exist. Start archiving....')
+        
+        shutil.make_archive(name, format, archive_from, archive_to)
+        shutil.move('%s.%s'%(name,format), destination)
+        
+    def cb_job_download_btn(self, _):
+        print("User downloads a selected job directory")
+        # only after calling this function, job_selection is updated
+        self.jobs_selected("Garbage Value")
+        print('len of view.job_selection is: ', len(self.view.job_selection))
+        print( self.view.job_selection)
 
+        if(len(self.view.job_selection)!=1):
+            self.view.instructions_label.value ="Select one model only for downloading output"
+            return
+        
+        folder = self.view.job_selection[0]
+       
+        # Assume SHARED_JOBS_SYM_LINK has been created to access /data/groups/simpleggroup/job
+        if folder[1] == 0:
+            root_dir = "SHARED_JOBS/"+folder[0]+"/outputs"
+        else:
+            root_dir = "SimpleGTool/job/"+folder[0]+"/outputs"
+            
+        destination = root_dir+".zip"
+        print("folder root :"+ root_dir)
+        self.make_my_archive(root_dir, destination)
+        display(FileLink(destination))
+       
+        
     def create_map_widget(self,map_id,is_private):
         # Act as if the user click the ViewTab to see a map
         self.view.tabs.selected_index = 2 
@@ -840,7 +894,8 @@ class Controller(logging.Handler):
     def location_list_widget(self,_):
         #Generate the Grid for
         self.list_of_points("Garbage Value")
-        temp = ui.HBox([self.view.location_export_btn])
+        export_instructions_label=ui.Label(value="Once you click the Export button, data values for chosen coordinates will be aved in your home directory's SimpleGTool/data.csv. Please download this to your local computer")
+        temp = ui.HBox([self.view.location_export_btn, export_instructions_label])
         self.view.location_list_section = section("Location List", [ui.VBox([self.view.location_grid,temp])])
         return self.view.location_list_section
 

@@ -80,6 +80,7 @@ class View:
         self.selectable_window = None
         self.display_btn = None
         self.compare_btn = None
+        self.job_download_btn = None
         self.checkboxes = {}
         self.shared_selectable_window = None
         self.shared_checkboxes = {}
@@ -288,7 +289,9 @@ class View:
         self.display_btn.style.button_color='PaleTurquoise'
         self.compare_btn=ui.Button(description="Compare",disabled=False)
         self.compare_btn.style.button_color='YellowGreen'
-        self.bottom_box=ui.HBox([self.display_btn,self.compare_btn])
+        self.job_download_btn=ui.Button(description="Download",disabled=False)
+        self.job_download_btn.style.button_color='PaleTurquoise'
+        self.bottom_box=ui.HBox([self.display_btn,self.compare_btn,self.job_download_btn])
         self.selectable_window_vbox = ui.VBox(children=[self.comparetab_header, self.selectable_window])
         #Assign the grid layout to the Vbox and the content
         self.selectable_window.options = list_of_jobs
@@ -369,8 +372,9 @@ class View:
         self.longname = ui.HTML(value="           ")
 
         self.view_location_button = ui.Button(description = 'Refresh Location List')
+        self.marker_instructions_label=ui.Label(value="Instructions: If you want to export certain coordinate's data values, select a point using top left control in the map. Repeat to add other points. Please hit the refresh button each time you select a point. This updates the list of chosen coordinates in the Location List. Lastly, hit the Export button in the Location List window.")
 
-        content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button],layout=box_layout),self.longname])
+        content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button, self.marker_instructions_label],layout=box_layout),self.longname])
 
         # map_stuff_testing = ""
         # map_wid = CustomMap("1200px","720px")
