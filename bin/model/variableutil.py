@@ -66,17 +66,17 @@ class VariableModel:
         
         temp = VariableService.result_to_view_path(self.id_str, self.system_component(), self.spatial_resolution(),
                                                    self.type_of_result(), self.result_to_view(),self.model_name,self.is_private)
-        path = str(temp).rsplit('/',1)[0]
-        files = os.listdir(path)
-        for i in files:
-            if 'tif' in i.rsplit('.',1)[1]:
-                path = str(temp).rsplit('.',1)[0]
-                path = path +"."+i.rsplit('.',1)[1]
-                return Path(path)
-                break
-        path = str(temp).rsplit('.',1)[0]
-        path = path + ".shp"
-        return Path(path)
+        print("file_path:", temp)
+        # temp has file extension so it is already valid file path
+        # if that exists, simply return exising path
+        if os.path.exists(temp):
+            return Path(temp)
+        else:
+            # if the file does not exist, return a shape file path
+            path = str(temp).rsplit('.',1)[0]
+            path = path + ".shp"
+            return Path(path)
+        
 
     def is_raster(self):
         path = str(self.file_path()).rsplit('/',1)[0]
@@ -153,13 +153,13 @@ class VariableService:
         from utils.experimentutil import ExperimentManager
         first_root = ExperimentManager.results_directory(self.id_str_1)
         first_prefix_len = len(str(first_root)) + 1  # +1 to account for the forward/back slash
-        first_paths = [str(path_)[first_prefix_len:] for path_ in first_root.glob("**/*.tif")]
+        first_paths = [str(path_)[first_prefix_len:] for path_ in first_root.glob("**/*.tif")+ first_root.glob("**/*.tiff") ]
         first_paths += [str(path_)[first_prefix_len:] for path_ in first_root.glob("**/*.shp")]
 
         if self.id_str_2:
             second_root = ExperimentManager.results_directory(self.id_str_2)
             second_prefix_len = len(str(second_root)) + 1
-            second_paths = [str(path_)[second_prefix_len:] for path_ in second_root.glob("**/*.tif")]
+            second_paths = [str(path_)[second_prefix_len:] for path_ in second_root.glob("**/*.tif")+second_root.glob("**/*.tiff") ]
             second_paths += [str(path_)[second_prefix_len:] for path_ in second_root.glob("**/*.shp")]
 
             valid_paths = [path_ for path_ in first_paths if path_ in second_paths]
@@ -173,6 +173,7 @@ class VariableService:
     def system_component_options(self) -> List[str]:
         # Note: The variables need to be in one of the intersected paths if intersected_paths is specified
         options = list(self._system_components)
+                                                                                                                      
         options.sort()
         return options
 

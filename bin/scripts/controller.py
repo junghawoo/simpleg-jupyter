@@ -486,17 +486,10 @@ class Controller(logging.Handler):
         self.view.dynamic_options=self.buildResultList(self.view.job_selection[0])
         #print(self.view.dynamic_options)
         self.view_layer_options("Garbage")
-        for job in self.view.checkboxes.keys():
-            if self.view.checkboxes[job].value == True:
-                self.create_map_widget(job,1)
-                self.view.job_display.append([job,1])
-                #print(self.view.checkboxes[job])
-                break
-        for job in self.view.shared_checkboxes.keys():
-            if self.view.shared_checkboxes[job].value == True:
-                self.create_map_widget(job,0)
-                self.view.job_display.append([job,0])
-                break
+        
+        for jobid, bPrivate in self.view.job_selection:
+            self.create_map_widget(jobid,bPrivate)
+            self.view.job_display.append([jobid,bPrivate])
         return
    
     #
@@ -552,11 +545,13 @@ class Controller(logging.Handler):
         
         #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
+        print("map id:", map_id)
+        
         map_wid = CustomMap("1200px","720px")
         if is_private == 1:
-            mapbox=section("Map ID(Private Job): "+str(map_id),[map_wid])
+            mapbox=section("Map ID (Private Job): "+str(map_id),[map_wid])
         else:
-            mapbox=section("Map ID(Shared Job): "+str(map_id),[map_wid])
+            mapbox=section("Map ID (Shared Job): "+str(map_id),[map_wid])
         temp_list = list(self.view.view_vbox.children)
         temp_list.append(mapbox)
         temp_list.append(self.location_list_widget("Garbage Value"))
@@ -594,6 +589,10 @@ class Controller(logging.Handler):
         return
 
     def cb_tif_display(self,_):
+        
+        # clear previous error message that has been displayed so far 
+        self.view.longname.value= " "
+        
         #Check ram and cpu usage before display.
         #print('The CPU usage is: ', psutil.cpu_percent(4))
         #print('RAM memory % used:', psutil.virtual_memory()[2])
@@ -647,18 +646,18 @@ class Controller(logging.Handler):
                         map_wid_1.visualize_raster(layer2, layer_util2.processed_raster_path)
                         self.layer_util_1 = layer_util2
 
-                    elif variable_model.is_vector():
+                    elif self.variable_model.is_vector():
                         layer_util = VectorLayerUtil(self.variable_model)
                         layer = layer_util.create_layer()
                         map_wid.add_layer(layer)
                         layer_util.create_legend(map_wid)
-                        self.layer_util = None
+                        self.layer_util = layer_util 
 
-                        layer_util = VectorLayerUtil(self.variable_model_1)
-                        layer = layer_util.create_layer()
+                        layer_util2 = VectorLayerUtil(self.variable_model_1)
+                        layer = layer_util2.create_layer()
                         map_wid_1.add_layer(layer)
                         layer_util.create_legend(map_wid_1)
-                        self.layer_util = None
+                        self.layer_util_1 = layer_util2 
 
                     
                     break
@@ -690,11 +689,11 @@ class Controller(logging.Handler):
                     self.layer_util = layer_util
                     self.layer_util_1 = None
                 elif self.variable_model.is_vector():
+                    layer_util = VectorLayerUtil(self.variable_model)
                     layer = layer_util.create_layer()
                     map_wid.add_layer(layer)
                     layer_util.create_legend(map_wid)
-                    self.layer_util = None
-                    self.layer_util_1 = None
+                    self.layer_util = layer_util 
 
                 break
             except Exception as e:
