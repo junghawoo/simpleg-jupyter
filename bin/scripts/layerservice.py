@@ -215,24 +215,16 @@ class RasterLayerUtil:
         #print(self.processed_raster_path)
         print("min, max", self._min_max_of_raster(self.processed_raster_path))
         print("tile folder", self._tile_folder_path)
-        # if self.variable_model.is_filtered() and self._tile_folder_path.exists():
-        #     shutil.rmtree(str(self._tile_folder_path))
-        #print(cpu_count())
-        #print(str(self._colorized_tif_path))
-        #print(str(self._tile_folder_path))
 
-        # Using 2 cpu cores instead of all to prevent gdal from crashing
-        # It will take longer but more reliable
-        # Removed the -e to make sure new temp files and processing is done again
-        #print(str(self._colorized_tif_path))
-        #
-        # use local gdal2tiles.py 
-        #gdal2tiles.run(["-z", "0-8", "-a", "0, 0, 0", "--processes=2", str(self._colorized_tif_path), str(self._tile_folder_path)])
-        
+        # Since it is taking long to prepare tiles, we wanted to show progress on the notebook, not the hidden log file
+        SIMPLEUtil.write_to_stdout()
         
         # use gdal2tiles package
         # this will use a single thread. Will test multithreads later
         gdal2tiles.generate_tiles(  str(self._colorized_tif_path), str(self._tile_folder_path), nb_processes=1, zoom='1-8',verbose=False)
+       
+        # redirect log to the hidden file 
+        SIMPLEUtil.write_log_to_file()
         
         return True
 

@@ -64,6 +64,7 @@ class SIMPLEUtil:
     #print("WORKING_DIR_SYM_LINK", WORKING_DIR_SYM_LINK)
     SHARED_JOBS_DIR: Path = shared_jobs_dir()
     SHARED_JOBS_SYM_LINK: Path = Path(APP_DIR) / "SHARED_JOBS" # For mygeohub's Jupyter. It needs a path relative to application's directory 
+    old_stdout = None
     
     @classmethod
     def initialize_working_directory(cls):
@@ -87,15 +88,27 @@ class SIMPLEUtil:
         if not cls.WORKING_DIR_SYM_LINK.exists():
             symlink(str(cls.WORKING_DIR), str(cls.WORKING_DIR_SYM_LINK))
             print("symlink to SimpleGTool is created under bin")
-        if sys.stdout != sys.__stdout__:
-            sys.stdout.close()
+        
+        cls.write_log_to_file()
+        
+
+    @classmethod
+    def write_log_to_file(cls):
             
         # Enabled this if you want to write log to a file
+        cls.old_stdout = sys.stdout
         sys.stdout = open(str(cls.LOG_FILE), "a+")
         sys.stderr = sys.stdout
-        #print("hello")
 
 
+    @classmethod
+    def write_to_stdout(cls):
+        sys.stdout.close()
+            
+        sys.stdout = cls.old_stdout 
+        sys.stderr = sys.stdout
+
+        
     @classmethod
     def upload_file(cls, save_path: Path):
         if in_mygeohub():
