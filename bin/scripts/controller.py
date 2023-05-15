@@ -343,7 +343,8 @@ class Controller(logging.Handler):
         self.comparetab_header[0,1] = ui.HTML(value = f"<b><font color='#1167b1'>Job ID</b>")
         self.comparetab_header[0,2] = ui.HTML(value = f"<b><font color='#1167b1'>Model Type</b>" )
         self.comparetab_header[0,3:5] = ui.HTML(value = f"<b><font color='#1167b1'>Job Name</b>" )
-        self.comparetab_header[0,5:10] = ui.HTML(value = f"<b><font color='#1167b1'>Description</b>")
+        self.comparetab_header[0,5:7] = ui.HTML(value = f"<b><font color='#1167b1'>Creation Time</b>" )
+        self.comparetab_header[0,7:10] = ui.HTML(value = f"<b><font color='#1167b1'>Description</b>")
         self.comparetab_header[0,10] = ui.HTML(value = f"<b><font color='#1167b1'>Job Status</b>")
 
 
@@ -362,7 +363,8 @@ class Controller(logging.Handler):
             self.view.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
             self.view.selectable_window[row_counter,2] = ui.HTML(row[6])
             self.view.selectable_window[row_counter,3:5] = ui.HTML(row[5])
-            self.view.selectable_window[row_counter,5:10] = ui.HTML(row[7])
+            self.selectable_window[row_counter,5:7] = ui.HTML(row[2]) # submitTime
+            self.view.selectable_window[row_counter,7:10] = ui.HTML(row[7])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
 
