@@ -550,6 +550,8 @@ class Controller(logging.Handler):
         print("map id:", map_id)
         
         map_wid = CustomMap("1200px","720px")
+        map_wid.intro(self, self.view)
+        
         if is_private == 1:
             mapbox=section("Map ID (Private Job): "+str(map_id),[map_wid])
         else:
@@ -566,7 +568,11 @@ class Controller(logging.Handler):
          #New map/Compare should have no points selected or no markers
         self.view.locations_list = []
         map_wid = CustomMap("600px","720px")
+        map_wid.intro(self, self.view)
+
         map_wid_1 = CustomMap("600px","720px")
+        map_wid_1.intro(self, self.view)
+
         # link two maps only after both are loaded to canvas
         map_wid.link(map_wid_1)
     
@@ -675,7 +681,10 @@ class Controller(logging.Handler):
                 map_id = self.view.job_selection[0][0]
                 self.variable_model = VariableModel(map_id,self.view.system_component.value, self.view.resolution.value,self.view.type_of_result.value,self.view.result_to_view.value,min(self.view.min_max_slider.value), max(self.view.min_max_slider.value),self.view.name_dd.value,self.view.job_selection[0][1])
                 mapbox.children[0].children[0].close()
-                mapbox.children[0].children = [CustomMap("1200px","720px")]
+                singleMap = CustomMap("1200px", "720px")
+                singleMap.intro(self, self.view)
+
+                mapbox.children[0].children = [singleMap]
                 map_wid = mapbox.children[0].children[0]
                 if len(map_wid.layers) == 2:
                     #print("Deleting Layers")
@@ -875,9 +884,8 @@ class Controller(logging.Handler):
         self.view.location_grid[0,2:4] = ui.HTML(value = f"<b><font color='#1167b1'>Location([longitude, latitude])</b>")
         self.view.location_grid[0,4:6] = ui.HTML(value = f"<b><font color='#1167b1'>Value</b>" )
         #print(self.view.locations_list)
-        if self.view.locations_list  == []:
-            return
-        else:
+        
+        if self.view.locations_list  != []:
             #print("LIST OF POINTS")
             for i in range(0,len(self.view.locations_list)):
                 #Checkbox
@@ -886,8 +894,12 @@ class Controller(logging.Handler):
                 self.view.location_grid[i+1,2:4] = ui.HTML(str(self.view.locations_list[i][1]))
                 #Value
                 self.view.location_grid[i+1,4:6] = ui.HTML(str(self.view.locations_list[i][2]))
+                
+        # even if view.locations_list is null, the location_grid should be redrawn        
         temp = ui.HBox([self.view.location_export_btn])
-        self.view.location_list_section.children = tuple([ui.VBox([ui.VBox([self.view.location_grid,temp])])])
+        
+        if self.view.location_list_section != None :
+            self.view.location_list_section.children = tuple([ui.VBox([ui.VBox([self.view.location_grid,temp])])])
         return
 
 

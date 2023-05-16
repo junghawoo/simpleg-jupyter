@@ -32,7 +32,12 @@ class CustomMap(Map):
         self.layout = Layout(width=width, height=height, margin="8px 0px 0px 0px")
         self.center = (39.5, -98.35)
         self.zoom = 4
+       
+        # to call some functions in controller class
+        self.controller = None
+        self.view = None
 
+        
         self._legend_bar = LegendBar()
         self._gdal_layer: Optional[TileLayer] = None  # Can be a raster layer or a vector layer.
         self._raster_service: Optional[RasterService] = None
@@ -83,12 +88,16 @@ class CustomMap(Map):
 
             if action == 'created':
                 self.selected_markers.append(geo_json['geometry']['coordinates'])
-                #print("coordinates:", geo_json['geometry']['coordinates'])
+                print("coordinates:", geo_json['geometry']['coordinates'])
 
             elif action == 'deleted':
                 self.selected_markers.remove(geo_json['geometry']['coordinates'])
-                #print("removed coordinates:", geo_json['geometry']['coordinates'])
+                print("removed coordinates:", geo_json['geometry']['coordinates'])
 
+            # to force redraw location_grid (selected points)
+            if( self.controller != None):
+                self.controller.cb_marker_movement("dummy")
+            
             #returned coordinate is [longitude, latitude] which correspond to x and y of mercator projection
             #print("selected_markers coordinates:", self.selected_markers)
             #print("dc.data", dc.data)
@@ -102,6 +111,11 @@ class CustomMap(Map):
 
             #print("dc.marker", dc.marker)
 
+    def intro(self, controller, view):
+        """Introduce MVC modules to each other"""
+        self.controller = controller 
+        self.view = view
+        
     def link(self, map_):
         assert isinstance(map_, self.__class__)
         jslink((self, "zoom"), (map_, "zoom"))
