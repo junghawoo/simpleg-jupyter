@@ -375,8 +375,7 @@ class View:
         self.longname = ui.HTML(value="           ")
 
         self.view_location_button = ui.Button(description = 'Refresh Location List')
-        self.marker_instructions_label=ui.Label(value="Instructions: If you want to export certain coordinate's data values, select a point using top left control in the map. Repeat to add other points. Please hit the refresh button each time you select a point. This updates the list of chosen coordinates in the Location List. Lastly, hit the Export button in the Location List window.")
-
+        self.marker_instructions_label = ui.HTML(value= '<style>p{word-wrap: break-word}</style> <p><center>'+ "[Instructions: If you want to export certain coordinate's data values, select a point using top left control in the map. <br/> Repeat to add other points. Please hit the refresh button each time you select a point. <br/> This updates the list of chosen coordinates in the Location List. <br/> Lastly, hit the Export button in the Location List window.]" +' </center></p>')
         content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button, self.marker_instructions_label],layout=box_layout),self.longname])
 
         # map_stuff_testing = ""
