@@ -70,6 +70,8 @@ class SIMPLEUtil:
     def initialize_working_directory(cls):
         # Jungha 
         
+        cls.write_log_to_file()
+        
         if cls.TEMP_DIR.exists():
             # delete even when the directory is not empty
             shutil.rmtree(str(cls.TEMP_DIR), ignore_errors=True)
@@ -89,7 +91,6 @@ class SIMPLEUtil:
             symlink(str(cls.WORKING_DIR), str(cls.WORKING_DIR_SYM_LINK))
             print("symlink to SimpleGTool is created under bin")
         
-        cls.write_log_to_file()
         
 
     @classmethod

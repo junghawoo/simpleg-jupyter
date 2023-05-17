@@ -907,7 +907,8 @@ class Controller(logging.Handler):
     def location_list_widget(self,_):
         #Generate the Grid for
         self.list_of_points("Garbage Value")
-        export_instructions_label=ui.Label(value="Once you click the Export button, data values for chosen coordinates will be aved in your home directory's SimpleGTool/data.csv. Please download this to your local computer")
+        export_instructions_label=ui.HTML(value= '<style>p{word-wrap: break-word}</style> <p><center>'+"You can export data values for the selected coordinates. <br/> Click the Export button, and wait for the download link. <br/> The data.csv includes the filename, coordinate, and data value."+' </center></p>')
+        
         temp = ui.HBox([self.view.location_export_btn, export_instructions_label])
         self.view.location_list_section = section("Location List", [ui.VBox([self.view.location_grid,temp])])
         return self.view.location_list_section
@@ -989,6 +990,7 @@ class Controller(logging.Handler):
                 return
 
     def download_selected_points(self,_):
+        
         #Headers
         header = ['Public/Private','Path','Longitude', 'Latitude', 'Value']
         #Data to write to CSV
@@ -1010,10 +1012,15 @@ class Controller(logging.Handler):
         #All files within the same job
         #Collecting files with .tif extension to extract from
         test = []
-        for root, dirs, files in os.walk(str(path).split("results/")[0]+"results/"):
+        directory = str(path).split("results/")[0]+"results/"
+        for cur_path, dirs, files in os.walk(directory):
             for file in files:
-                if file[-3:] == "tif":
-                    test.append(root+"/"+'/'.join(x for x in dirs)+file)
+                # raster file can have either .tif or .tiff
+                if file[-3:] == "tif" or file[-4:] == "tiff" :
+                    eligible_file = os.path.join(directory, cur_path, file)
+                    #print("eligible: ", eligible_file)
+                    test.append(eligible_file)
+                    
         for file in test:
             for i in range(0,len(self.view.locations_list)):
                 if self.view.locations_list[i][0].value == True:
@@ -1026,11 +1033,12 @@ class Controller(logging.Handler):
                     pts = [x[0] for x in src.sample(coords_temp)]
                     temp_data.append([public_private,file,self.view.locations_list[i][1][0],self.view.locations_list[i][1][1],pts[0]])
 
-        name = os.path.expanduser("~") + "/SimpleGTool/data.csv"
-        with open(name, 'w', encoding='UTF8', newline='') as f:
+        filename_to_download = "SimpleGTool/data.csv"
+        with open(filename_to_download, 'w', encoding='UTF8', newline='') as f:
             writer = csv.writer(f)
             # write the header
             writer.writerow(header)
             # write multiple rows
             writer.writerows(temp_data)
-        print("File exported to "+name)
+        print("File exported to "+ filename_to_download)
+        display(FileLink(filename_to_download))
