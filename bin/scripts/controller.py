@@ -18,7 +18,7 @@ from model.variableutil import VariableModel
 from scripts.DBManager import *
 #from JobManager.py import *
 from IPython.display import clear_output
-from IPython.display import HTML
+from IPython.display import HTML, Javascript
 from IPython.display import FileLink
 from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
@@ -252,6 +252,8 @@ class Controller(logging.Handler):
         self.view.upload_btn._counter = 0
         self.view.refresh_btn.disabled = False
         self.view.submit_button.disabled = False
+       
+        self.popup("Job has been submitted")
         return
 
     def jobs_selected(self,_):
@@ -363,7 +365,7 @@ class Controller(logging.Handler):
             self.view.selectable_window[row_counter,1] = ui.HTML(str(row[0]))
             self.view.selectable_window[row_counter,2] = ui.HTML(row[6])
             self.view.selectable_window[row_counter,3:5] = ui.HTML(row[5])
-            self.selectable_window[row_counter,5:7] = ui.HTML(row[2]) # submitTime
+            self.view.selectable_window[row_counter,5:7] = ui.HTML(row[2]) # submitTime
             self.view.selectable_window[row_counter,7:10] = ui.HTML(row[7])
             self.view.selectable_window[row_counter,10] = ui.HTML(row[4])
             row_counter = row_counter + 1
@@ -596,6 +598,11 @@ class Controller(logging.Handler):
         self.view.view_vbox.children = tuple(temp_list)
         return
 
+    
+    def popup(self, text):
+        display(Javascript("alert('{}')".format(text)))
+    
+    
     def cb_tif_display(self,_):
         
         # clear previous error message that has been displayed so far 
