@@ -70,7 +70,6 @@ class SIMPLEUtil:
     def initialize_working_directory(cls):
         # Jungha 
         
-        cls.write_log_to_file()
         
         if cls.TEMP_DIR.exists():
             # delete even when the directory is not empty
@@ -83,6 +82,7 @@ class SIMPLEUtil:
             cls.TEMP_DIR.mkdir(parents=True)
         if not cls.LOG_FILE.exists():
             cls.LOG_FILE.touch()
+            cls.write_log_to_file()
             print('create log')
         if not cls.SHARED_JOBS_SYM_LINK.exists():
             print("trying to create a symlink for shared jobs", cls.SHARED_JOBS_DIR,":")
