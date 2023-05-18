@@ -95,7 +95,8 @@ class CustomMap(Map):
                 print("removed coordinates:", geo_json['geometry']['coordinates'])
 
             # to force redraw location_grid (selected points)
-            if( self.controller != None):
+            # Don't process the vector file (we do not support vector file yet)
+            if( self.controller != None and self._raster_service != None):
                 self.controller.cb_marker_movement("dummy")
             
             #returned coordinate is [longitude, latitude] which correspond to x and y of mercator projection
