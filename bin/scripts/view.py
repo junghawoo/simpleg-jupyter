@@ -165,9 +165,9 @@ class View:
         #Dropdown for the model Selction
         self.model_dd=ui.Dropdown(options=self.MODEL_DROPDOWN_CREATETAB,value='-',description='Model:',disabled=False)
         #Name text Box
-        self.name_tb=ui.Text(value='model',placeholder='Name of the model',description='Name:',disabled=False)
+        self.name_tb=ui.Text(value='',placeholder='Name of the model',description='Name:',disabled=False)
         #Description Text Area
-        self.description_ta=ui.Textarea(value='Description',placeholder='Description',description='Description:',disabled=False)
+        self.description_ta=ui.Textarea(value='',placeholder='Description',description='Description:',disabled=False)
         #Upload Button
         self.upload_text=ui.Label(value="Configuration File:")
         self.upload_btn=ui.FileUpload(

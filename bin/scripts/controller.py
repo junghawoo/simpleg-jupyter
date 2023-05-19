@@ -204,18 +204,30 @@ class Controller(logging.Handler):
 
     # Job submit handler
     def cb_job_create(self, _):
-        self.view.submit_button.disabled = True
         #Checking to see if the input is valid
         myupload = self.view.upload_btn.value
-        #print(myupload)
+        print(myupload)
+        sys.stdout.flush()
+        
+        #A command file MUST exist to submit a job
+        #If a user has not uploaded cmf file, abort submission, and 
+        #shows error message.
+        
+        if not bool(myupload):
+            self.popup("Please upload a command file(.cmf) before submitting a job. Aborting job submission...")    
+            return
+       
         uploaded_filename = list(myupload.keys())[0]
         content = myupload[uploaded_filename]['content']
-        
+            
         if uploaded_filename[-4:] != ".cmf":
             return
         if self.view.model_dd.value == "-":
             return
 
+        #While submitting job, disable another job submission
+        self.view.submit_button.disabled = True
+        
         #Creating the sql entry
         user = os.popen("whoami").read().rstrip('\n')
         job_id = self.db_class_import.createNewJob(self.view.model_dd.value,self.view.name_tb.value,self.view.description_ta.value,"Processing",user,"0")
