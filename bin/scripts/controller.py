@@ -616,6 +616,8 @@ class Controller(logging.Handler):
     
     
     def cb_tif_display(self,_):
+       
+        self.popup("Creating tiles for map display. It may take a few minutes. Check the progress below...")
         
         # clear previous error message that has been displayed so far 
         self.view.longname.value= " "
@@ -1022,6 +1024,16 @@ class Controller(logging.Handler):
             else:
                 public_private = "Public"
             path = self.variable_model.file_path()
+           
+        
+        #if no point is selected, do not create csv file.
+        #notify users that at least one coordinate needs to be selected
+        if len(self.view.locations_list) == 0:
+            self.popup("Please select at least one coordinate to export data values.")
+            return
+        
+        
+        
         for i in range(0,len(self.view.locations_list)):
             #Checkbox True or Not
             if self.view.locations_list[i][0].value == True:

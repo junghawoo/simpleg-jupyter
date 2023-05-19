@@ -212,7 +212,7 @@ class View:
         #Label with refresh and instructions
         self.instructions_label=ui.Label(value="Select one model for Display, select two for Compare. After clicking Display/Compare head to the View Tab")
         self.refresh_btn=ui.Button(description="Refresh",disabled=False)
-        self.refresh_btn.style.button_color='PaleTurquoise'
+        self.refresh_btn.style.button_color='YellowGreen'
         top_box=ui.HBox([self.refresh_btn,self.instructions_label])
 
         #Temporary Database Access will be refreshed with a global variable and the callback function
@@ -307,7 +307,7 @@ class View:
             rows = cursor.fetchall()
         except:
             #Join the widgets
-            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box]
+            content=[top_box, self.bottom_box, section("Compare Tab",[self.selectable_window_vbox]),self.bottom_box]
             contentvbox = ui.VBox(content)
         else:
             #Storing the contents of the db in list_of_jobs
@@ -347,7 +347,7 @@ class View:
             sharedjob_accordian = section("Shared Jobs",[self.shared_selectable_window_vbox])
             sharedjob_accordian.selected_index= None # to collapse by default 
             
-            content=[top_box,section("Compare Tab",[self.selectable_window_vbox]),sharedjob_accordian,self.bottom_box]
+            content=[top_box, self.bottom_box, section("Compare Tab",[self.selectable_window_vbox]),sharedjob_accordian,self.bottom_box]
             contentvbox = ui.VBox(content)
 
         return contentvbox
