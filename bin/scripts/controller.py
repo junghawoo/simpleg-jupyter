@@ -317,9 +317,11 @@ class Controller(logging.Handler):
                     self.model_type.append(1)
             row_counter +=1
         #print(self.model_type)
-        temp = self.model_type[0]
-        self.model_type = temp
-        #print(self.model_type)
+        
+        #model_type MUST be set when at least one job is selected
+        if len(self.view.job_selection) != 0 :
+            temp = self.model_type[0]
+            self.model_type = temp
 
         return
 
@@ -537,6 +539,10 @@ class Controller(logging.Handler):
         print('len of view.job_selection is: ', len(self.view.job_selection))
         print( self.view.job_selection)
 
+        if(len(self.view.job_selection) == 0 ):
+            self.view.instructions_label.value ="Select one model only for downloading output"
+            return
+        
         if(len(self.view.job_selection)!=1):
             self.view.instructions_label.value ="Select one model only for downloading output"
             return
