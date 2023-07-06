@@ -1,7 +1,9 @@
 from scripts.SIMPLEUtil import SIMPLEUtil
 import json
 import sqlite3
-import os, datetime
+import os
+from datetime import datetime
+from pytz import timezone
 import sys
 from pathlib import Path
 
@@ -67,8 +69,10 @@ class DBManager:
     
     def createNewJob(self,model_dd,name,description,status,author,remotejobid):
         
-        now = datetime.datetime.now()
-        submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
+        # datetime string will have timezone information
+        fmt = "%m/%d/%Y %H:%M:%S %Z"
+        now_time = datetime.now(timezone('US/Eastern'))
+        submit_time = now_time.strftime(fmt)
         
         # to ensure unique job id, we delegate job id creation to the database table using autoincrement keyword.
         # the unique key is retrieved by remotejob id.

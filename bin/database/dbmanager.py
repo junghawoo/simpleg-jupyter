@@ -1,4 +1,5 @@
 from datetime import datetime
+from pytz import timezone
 from getpass import getuser
 import os
 from pathlib import Path
@@ -112,9 +113,11 @@ class DBManager:
         return private
 
     def new_experiment(self, name: str, description: str, model: str) -> Experiment:
-        now = datetime.now()
-        submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
-
+        # datetime string will have timezone information
+        fmt = "%m/%d/%Y %H:%M:%S %Z"
+        now_time = datetime.now(timezone('US/Eastern'))
+        submit_time = now_time.strftime(fmt)
+        
         conn = sqlite3.connect(self.PRIVATE_DB_FILE)
         sql = 'insert into SIMPLEJobs(submitTime,jobstatus) values (?,?);'
         conn.execute(sql, (submit_time, 'Pending'))
@@ -132,9 +135,10 @@ class DBManager:
 
     def _insert_experiment(self, experiment: Experiment) -> int:
         """ Should only be used to insert seed data """""
-
-        now = datetime.now()
-        submit_time = now.strftime('%m/%d/%Y %H:%M:%S')
+        # datetime string will have timezone information
+        fmt = "%m/%d/%Y %H:%M:%S %Z"
+        now_time = datetime.now(timezone('US/Eastern'))
+        submit_time = now_time.strftime(fmt)
 
         db_file = self.PRIVATE_DB_FILE if experiment.is_private else self.SHARED_DB_FILE
         conn = sqlite3.connect(db_file)
