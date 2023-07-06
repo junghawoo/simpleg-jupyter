@@ -20,6 +20,7 @@ from scripts.DBManager import *
 from IPython.display import clear_output
 from IPython.display import HTML, Javascript
 from IPython.display import FileLink
+from utils.utils import show_loading, hide_loading, toast, download_local_file, is_dev, show_info_dialog
 from scripts.view import section,section_horizontal
 from scripts.layerservice import VectorLayerUtil
 import pandas as pd
@@ -265,7 +266,7 @@ class Controller(logging.Handler):
         self.view.refresh_btn.disabled = False
         self.view.submit_button.disabled = False
        
-        self.popup("Job has been submitted")
+        self.popup("Job has been submitted. Please go to the manage tab to check on the job status.")
         return
 
     def jobs_selected(self,_):
@@ -333,7 +334,7 @@ class Controller(logging.Handler):
         conn = sqlite3.connect(dbfile)
         cursor = conn.cursor()
         #Database is always created first so the next statement should not give an error
-        cursor.execute("SELECT * FROM SIMPLEJobs")
+        cursor.execute("SELECT * FROM SIMPLEJobs order by jobid DESC")
         rows = cursor.fetchall()
         #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
@@ -395,7 +396,7 @@ class Controller(logging.Handler):
         conn = sqlite3.connect(dbfile)
         cursor = conn.cursor()
         #Database is always created first so the next statement should not give an error
-        cursor.execute("SELECT * FROM SIMPLEJobs")
+        cursor.execute("SELECT * FROM SIMPLEJobs order by jobid DESC")
         rows = cursor.fetchall()
         #Storing the contents of the db in list_of_jobs
         list_of_jobs = []
@@ -558,7 +559,8 @@ class Controller(logging.Handler):
         destination = root_dir+".zip"
         print("folder root :"+ root_dir)
         self.make_my_archive(root_dir, destination)
-        display(FileLink(destination))
+        #display(FileLink(destination))
+        download_local_file(destination)
        
         
     def create_map_widget(self,map_id,is_private):
@@ -942,6 +944,12 @@ class Controller(logging.Handler):
 
     # When the location button is clicked on the view tab
     def cb_marker_movement(self,_):
+        
+                # if no map is selected, just return 
+                if len(self.view.view_vbox.children) <2:
+                   self.popup("Please select a output image and coordinates of interest.")
+                   return
+        
                 #Retrieving the map widget from the display
                 mapbox = self.view.view_vbox.children[1]
                 map_id = self.view.job_selection[0][0]
@@ -1078,4 +1086,6 @@ class Controller(logging.Handler):
             # write multiple rows
             writer.writerows(temp_data)
         print("File exported to "+ filename_to_download)
-        display(FileLink(filename_to_download))
+        #display(FileLink(filename_to_download))
+        download_local_file(filename_to_download)
+        

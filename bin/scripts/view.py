@@ -222,7 +222,7 @@ class View:
         
         try:
             #Database is always created first so the next statement should not give an error
-            cursor.execute("SELECT * FROM SIMPLEJobs")
+            cursor.execute("SELECT * FROM SIMPLEJobs order by jobid DESC")
             rows = cursor.fetchall()
             print(rows)
             print("len of rows", len(rows))
@@ -288,11 +288,11 @@ class View:
         #Display Compare Buttons
         #Display a Map button changed to Visualize (a map)
         self.display_btn=ui.Button(description="Visualize",disabled=False)
-        self.display_btn.style.button_color='PaleTurquoise'
+        self.display_btn.style.button_color='YellowGreen'
         self.compare_btn=ui.Button(description="Compare",disabled=False)
         self.compare_btn.style.button_color='YellowGreen'
         self.job_download_btn=ui.Button(description="Download",disabled=False)
-        self.job_download_btn.style.button_color='PaleTurquoise'
+        self.job_download_btn.style.button_color='YellowGreen'
         self.bottom_box=ui.HBox([self.display_btn,self.compare_btn,self.job_download_btn])
         self.selectable_window_vbox = ui.VBox(children=[self.comparetab_header, self.selectable_window])
         #Assign the grid layout to the Vbox and the content
@@ -303,7 +303,7 @@ class View:
             conn = sqlite3.connect(dbfile)
             cursor = conn.cursor()
             #Database is always created first so the next statement should not give an error
-            cursor.execute("SELECT * FROM SIMPLEJobs")
+            cursor.execute("SELECT * FROM SIMPLEJobs order by jobid DESC")
             rows = cursor.fetchall()
         except:
             #Join the widgets
@@ -375,6 +375,8 @@ class View:
         self.longname = ui.HTML(value="           ")
 
         self.view_location_button = ui.Button(description = 'Refresh Location List')
+        self.view_location_button.style.button_color='YellowGreen'
+
         self.marker_instructions_label = ui.HTML(value= '<style>p{word-wrap: break-word}</style> <p><center>'+ "[Instructions: If you want to export certain coordinate's data values, select a point using top left control in the map. <br/> Repeat to add other points. Please hit the refresh button each time you select a point. <br/> This updates the list of chosen coordinates in the Location List. <br/> Lastly, hit the Export button in the Location List window.]" +' </center></p>')
         content=section_horizontal("Select Options for displaying maps",[ui.VBox(children=[self.system_component,self.resolution,self.name_dd,self.result_to_view,self.type_of_result,self.min_max_slider,self.view_button_submit,self.view_location_button, self.marker_instructions_label],layout=box_layout),self.longname])
 
