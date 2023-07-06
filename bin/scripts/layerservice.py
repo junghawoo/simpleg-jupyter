@@ -221,7 +221,7 @@ class RasterLayerUtil:
         
         # use gdal2tiles package
         # this will use a single thread. Will test multithreads later
-        gdal2tiles.generate_tiles(  str(self._colorized_tif_path), str(self._tile_folder_path), nb_processes=1, zoom='1-8',verbose=False)
+        gdal2tiles.generate_tiles(  str(self._colorized_tif_path), str(self._tile_folder_path), nb_processes=1, zoom='3-8',verbose=False)
        
         # redirect log to the hidden file 
         SIMPLEUtil.write_log_to_file()

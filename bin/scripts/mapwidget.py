@@ -32,6 +32,9 @@ class CustomMap(Map):
         self.layout = Layout(width=width, height=height, margin="8px 0px 0px 0px")
         self.center = (39.5, -98.35)
         self.zoom = 4
+        # since SIMPLEG-US is US model, there is no need to display world map
+        # so we are restricting too zoomed out views
+        self.min_zoom = 3 
        
         # to call some functions in controller class
         self.controller = None
@@ -46,26 +49,27 @@ class CustomMap(Map):
 
         self._coordinates_text = HTML("Coordinates: -", style_={"font-size": '11px'})
         self._value_text = HTML("Value: -", style_={"font-size": '11px'})
-        continuos_update_text = HTML("Continuos update:", style_={"font-size": '11px',
-                                                                        "margin": "0px 4px 0px 0px"})
-        self._continuos_update_checkbox = Checkbox(font_size="15px",
-                                                         style_={"width": "15px",
-                                                                 "height": "15px",
-                                                                 "padding": "0px 0px 0px 0px"
-                                                                 })
-        self._continuos_update_checkbox.checked = True
-        self._continuos_update_checkbox.observe(self._onclick_checkbox)
-        wrapper = VBox(children=[continuos_update_text, self._continuos_update_checkbox],
-                            style_={
-                                "display": "flex",
-                                "flex-direction": "row",
-                                "justify-content": "flex-start",
-                                "align-items": "center",
-                                "padding": "0px 0px 0px 0px",
-                                "margin": "0px 0px 0px 0px",
-                            }
-                            )
-        self._value_area = VBox(children=[self._coordinates_text, self._value_text, wrapper],
+        #continuos_update_text = HTML("Continuos update:", style_={"font-size": '11px',
+        #                                                                "margin": "0px 4px 0px 0px"})
+        #self._continuos_update_checkbox = Checkbox(font_size="15px",
+        #                                                 style_={"width": "15px",
+        #                                                         "height": "15px",
+        #                                                         "padding": "0px 0px 0px 0px"
+        #                                                         })
+        #self._continuos_update_checkbox.checked = True
+        #self._continuos_update_checkbox.observe(self._onclick_checkbox)
+        #wrapper = VBox(children=[continuos_update_text, self._continuos_update_checkbox],
+        #                    style_={
+        #                        "display": "flex",
+        #                        "flex-direction": "row",
+        #                        "justify-content": "flex-start",
+        #                        "align-items": "center",
+        #                        "padding": "0px 0px 0px 0px",
+        #                        "margin": "0px 0px 0px 0px",
+        #                    }
+        #                    )
+        #self._value_area = VBox(children=[self._coordinates_text, self._value_text,wrapper],
+        self._value_area = VBox(children=[self._coordinates_text, self._value_text],
                                 layout=Layout(min_width="174px", height="100px", padding="4px 4px 4px 4px"))
 
         self.add_control(WidgetControl(widget=self._legend_bar, position="bottomleft"))
@@ -158,7 +162,8 @@ class CustomMap(Map):
             self._linked_map._continuos_update_checkbox.checked = widget.checked
 
     def _mouse_event(self, **kwargs):
-        if (not self._continuos_update_checkbox.checked) and (kwargs.get("type") != "click"):
+        #if (not self._continuos_update_checkbox.checked) and (kwargs.get("type") != "click"):
+        if (kwargs.get("type") != "click"):
             return
         coordinates = kwargs.get('coordinates')
         latitude = float(coordinates[0])
