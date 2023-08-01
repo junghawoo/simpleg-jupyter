@@ -208,6 +208,8 @@ class Controller(logging.Handler):
         #Checking to see if the input is valid
         myupload = self.view.upload_btn.value
         print(myupload)
+        myharupload = self.view.upload_har_btn.value
+        print(myharupload)
         sys.stdout.flush()
         
         #A command file MUST exist to submit a job
@@ -217,11 +219,20 @@ class Controller(logging.Handler):
         if not bool(myupload):
             self.popup("Please upload a command file(.cmf) before submitting a job. Aborting job submission...")    
             return
+        
+        if not bool(myharupload):
+            self.popup("Please upload a HAR file (.HAR) before submitting a job. Aborting job submission...")    
+            return
        
         uploaded_filename = list(myupload.keys())[0]
         content = myupload[uploaded_filename]['content']
             
+        uploaded_har_filename = list(myharupload.keys())[0]
+        content_harfile = myharupload[uploaded_har_filename]['content']
+        
         if uploaded_filename[-4:] != ".cmf":
+            return
+        if uploaded_har_filename[-4:] != ".HAR":
             return
         if self.view.model_dd.value == "-":
             return
@@ -235,20 +246,41 @@ class Controller(logging.Handler):
         file_location = os.popen("echo $HOME").read().rstrip('\n') + "/SimpleGTool/job/" + str(job_id)
         Path(file_location).mkdir(parents=True, exist_ok=True)
         command = None
-        command_simple = None
+        command_harfile = None   # Har filename
+        command_simple_target = None
         self.view.refresh_btn.disabled = True
         self.refresh_manage_jobs("None")
+        
+        with open(file_location+'/userData.HAR', 'wb') as f: f.write(content_harfile)
+        command_harfile = "userData.HAR"
+        
         #Create File to submit and set the parameters
         if self.view.model_dd.value == "Custom Crops":
             with open(file_location+'/SIMPLE_G_AllCrops.cmf', 'w') as f: f.write(content.decode("utf-8"))
             command = "SIMPLE_G_AllCrops.cmf"
-            command_simple = "simpleg_us_all"
+            
+            # now users can choose singularity images: 1) baseline or 2) I-GUIDE
+            # find out user's selection and set the target image accordingly
+            if self.view.version_dd.value == "Baseline":
+                command_simple_target = "simpleg_us_all_20230801"
+            else: # I-GUIDE
+                command_simple_target = "simpleg_us_igs_all_20230801"
+            
+            
         if self.view.model_dd.value == "Custom CornSoy":
             with open(file_location+'/SIMPLE_G_CornSoy.cmf', 'w') as f: f.write(content.decode("utf-8"))
             command = "SIMPLE_G_CornSoy.cmf"
-            command_simple = "simpleg_us_corn"
+            
+            # now users can choose singularity images: 1) baseline or 2) I-GUIDE
+            # find out user's selection and set the target image accordingly
+            if self.view.version_dd.value == "Baseline":
+                command_simple_target = "simpleg_us_corn_20230801"
+            else: # I-GUIDE
+                command_simple_target = "simpleg_us_igs_corn_20230801"
+                
         #Run the submit tool
-        submit = subprocess.run(["submit", "-v","--detach" ,"-w","15","-i",command,command_simple ], capture_output=True ,cwd= file_location)
+        submit = subprocess.run(["submit", "-v","--detach" ,"-w","15","-i",command, "-i", command_harfile, command_simple_target ], capture_output=True ,cwd= file_location)
+        
         # Path needs to be outputs not out
         get_id = submit.stdout.decode("utf-8")
         print("get_id:{}".format(get_id))

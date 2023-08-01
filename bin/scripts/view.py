@@ -34,6 +34,7 @@ def section_horizontal(title,contents):
 class View:
     TAB_TITLES = ['Create', 'Manage', 'Visualize', 'About']
     MODEL_DROPDOWN_CREATETAB = ['-','Custom Crops','Custom CornSoy']
+    VERSION_DROPDOWN_CREATETAB = ['Baseline','I-GUIDE']
     SECTION_TITLE = 'Data'
     DATA_SOURCE_TITLE = 'Source'
 
@@ -67,6 +68,7 @@ class View:
 
         #Create Tab
         self.model_dd = None
+        self.version_dd = None # Singularity tag or model version
         self.name_tb = None
         self.submit_button = None
         self.description_ta = None
@@ -164,6 +166,8 @@ class View:
         self.instructions_label_create=ui.Label(value="Instructions: Upload the .cmf files here. Upload only one file. Look at the About Tab for cmf templates.")
         #Dropdown for the model Selction
         self.model_dd=ui.Dropdown(options=self.MODEL_DROPDOWN_CREATETAB,value='-',description='Model:',disabled=False)
+        #Dropdown for the model version selction
+        self.version_dd = ui.Dropdown(options= self.VERSION_DROPDOWN_CREATETAB, value='Baseline',description='Version:',disabled=False)
         #Name text Box
         self.name_tb=ui.Text(value='',placeholder='Name of the model',description='Name:',disabled=False)
         #Description Text Area
@@ -177,6 +181,14 @@ class View:
         
         self.selected_filename_label =ui.Label(value="")
         
+        #Upload user customized HAR file Button
+        self.upload_har_text=ui.Label(value="User's custom HAR File:")
+        self.upload_har_btn=ui.FileUpload(
+            accept='.HAR',  # Accepted file extension e.g. '.txt', '.pdf', 'image/*', 'image/*,.pdf'
+            multiple=False  # True to accept multiple files upload else False
+        )
+        self.selected_har_filename_label =ui.Label(value="")
+        
         #this is to update filename label to chosen filename
         def on_upload_change(change):
             #extract filename 
@@ -184,19 +196,31 @@ class View:
             uploaded_filename = list(myupload.keys())[0]
             self.selected_filename_label.value = uploaded_filename
             self.upload_btn._counter=1     
-
         
         self.upload_btn.observe(on_upload_change, names='value')
+        
+        #this is to update filename label to chosen filename
+        def on_har_upload_change(change):
+            #extract filename 
+            myupload = self.upload_har_btn.value
+            uploaded_filename = list(myupload.keys())[0]
+            self.selected_har_filename_label.value = uploaded_filename
+            self.upload_har_btn._counter=1     
+        
+        self.upload_har_btn.observe(on_har_upload_change, names='value')
        
         #Any HTML color names are accepted
         self.upload_btn.style.button_color = 'PaleTurquoise'
         self.upload_row=ui.HBox([self.upload_text,self.upload_btn, self.selected_filename_label])
+        self.upload_har_btn.style.button_color = 'PaleTurquoise'
+        self.upload_har_row=ui.HBox([self.upload_har_text,self.upload_har_btn, self.selected_har_filename_label])
+        
         #Submit Button
         self.submit_button=ui.Button(description='SUBMIT')
         self.submit_button.style.button_color = 'YellowGreen'
         #submit_button.layout = ui.Layout(width="50%")
         #Creating a VBox with the individual widgets
-        createTab_widgets = ui.VBox(children=[self.instructions_label_create,self.model_dd,self.name_tb,self.description_ta,self.upload_row,self.submit_button],layout=box_layout)
+        createTab_widgets = ui.VBox(children=[self.instructions_label_create,self.model_dd, self.version_dd,  self.name_tb,self.description_ta,self.upload_row, self.upload_har_row, self.submit_button],layout=box_layout)
         #createTab_widgets.align_items = 'center'
         content = [section("New Experiment",[ui.VBox(children=[createTab_widgets])])]
 
