@@ -228,7 +228,7 @@ class VariableService:
         assert to_directory_name or to_display_name
         spatial_resolution_path = cls.spatial_resolution_path(id_str, system_component, spatial_resolution,is_private)
         simple_variable = cls.simple_variable(id_str, system_component,spatial_resolution,model_name,is_private) 
-        file_format = ".tif" if spatial_resolution.lower() == "geospatial" else ".shp"
+        file_format = ".tiff" if spatial_resolution.lower() == "geospatial" else ".shp"
         suffix = cls._result_to_view_suffix(result_to_view)
         name = None
         if to_directory_name:
