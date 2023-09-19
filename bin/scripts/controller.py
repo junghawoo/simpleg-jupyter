@@ -279,7 +279,7 @@ class Controller(logging.Handler):
                 command_simple_target = "simpleg_us_igs_corn_20230801"
                 
         #Run the submit tool
-        submit = subprocess.run(["submit", "-v","--detach" ,"-w","15","-i",command, "-i", command_harfile, command_simple_target ], capture_output=True ,cwd= file_location)
+        submit = subprocess.run(["submit", "-v","--detach" ,"-w","60","-i",command, "-i", command_harfile, command_simple_target ], capture_output=True ,cwd= file_location)
         
         # Path needs to be outputs not out
         get_id = submit.stdout.decode("utf-8")
